@@ -1,0 +1,58 @@
+# ========================
+# Visual Studio
+# ========================
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ========================
+# Build output
+# ========================
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+
+# ========================
+# ASP.NET
+# ========================
+App_Data/*.mdf
+App_Data/*.ldf
+
+# ========================
+# IIS / Local publish
+# ========================
+PublishProfiles/
+*.pubxml
+*.publishsettings
+
+# ========================
+# NuGet
+# ========================
+packages/
+*.nupkg
+
+# ========================
+# Logs
+# ========================
+*.log
+
+# ========================
+# OS
+# ========================
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ========================
+# Secrets / config
+# ========================
+web.config
+web.*.config
+appsettings.json
+appsettings.*.json
+Models

@@ -1,0 +1,101 @@
+﻿@model congnghephanmem.Models.PostViewModel
+
+@{
+    ViewBag.Title = "Viết bài mới";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="chart-box">
+            <div class="d-flex align-items-center gap-2 mb-4">
+                <a href="@Url.Action("Index")" class="text-decoration-none text-muted">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <h4 class="fw-bold m-0">Soạn thảo bài viết</h4>
+            </div>
+
+            @using (Html.BeginForm("Create", "Post", FormMethod.Post, new { enctype = "multipart/form-data" }))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="row g-4">
+                    <div class="col-lg-8">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted">Tiêu đề bài viết</label>
+                            @Html.TextBoxFor(m => m.Title, new { @class = "form-control fw-bold fs-5", placeholder = "Nhập tiêu đề hấp dẫn..." })
+                            @Html.ValidationMessageFor(m => m.Title, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted">Tóm tắt ngắn (Excerpt)</label>
+                            @Html.TextAreaFor(m => m.Excerpt, new { @class = "form-control", rows = "3", placeholder = "Mô tả ngắn gọn nội dung..." })
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted">Nội dung chi tiết</label>
+                            @Html.TextAreaFor(m => m.Content, new { @id = "editorContent" })
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card border-0 bg-light p-3 rounded-3 mb-4">
+                            <h6 class="fw-bold mb-3">Đăng bài</h6>
+
+                            <div class="mb-3">
+                                <label class="form-label small text-muted fw-bold">Trạng thái</label>
+                                @Html.DropDownListFor(m => m.Status, new List<SelectListItem>
+                                {
+                                    new SelectListItem { Text = "Xuất bản ngay", Value = "PUBLISHED" },
+                                    new SelectListItem { Text = "Lưu bản nháp", Value = "DRAFT" }
+                                }, new { @class = "form-select" })
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small text-muted fw-bold">Chuyên mục</label>
+                                @Html.DropDownListFor(m => m.CategoryId, (SelectList)ViewBag.Categories, "--- Chọn chuyên mục ---", new { @class = "form-select" })
+                                @Html.ValidationMessageFor(m => m.CategoryId, "", new { @class = "text-danger small" })
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mt-2" style="background-color: var(--admin-primary); border: none;">
+                                <span class="material-symbols-outlined align-middle fs-6">send</span> Đăng bài viết
+                            </button>
+                        </div>
+
+                        <div class="card border-0 bg-light p-3 rounded-3">
+                            <h6 class="fw-bold mb-3">Ảnh đại diện</h6>
+
+                            <div class="text-center mb-3">
+                                <img id="previewImg" src="https://via.placeholder.com/300x200?text=Upload+Image" class="img-fluid rounded border bg-white" style="max-height: 200px; object-fit: cover;" />
+                            </div>
+
+                            <input type="file" name="ThumbnailImage" id="ThumbnailImage" class="form-control" onchange="previewFile(this);" />
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Kích hoạt CKEditor cho textarea có id="editorContent"
+    CKEDITOR.replace('editorContent', {
+        height: 400
+    });
+
+    // 2. Hàm xem trước ảnh khi chọn file
+    function previewFile(input) {
+        var file = input.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function () {
+                document.getElementById("previewImg").src = reader.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+</script>

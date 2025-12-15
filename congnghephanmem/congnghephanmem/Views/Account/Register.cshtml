@@ -1,0 +1,132 @@
+﻿@model congnghephanmem.Models.RegisterViewModel
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Đăng ký tài khoản - Nhà Thuốc Online</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ecc8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#10221f",
+                        "text-light": "#0d1b19",
+                        "text-dark": "#e0f2ef",
+                        "subtle-light": "#e7f3f1",
+                        "subtle-dark": "#1a3833",
+                        "border-light": "#cfe7e3",
+                        "border-dark": "#2a5f56",
+                        "placeholder-light": "#4c9a8d",
+                        "placeholder-dark": "#85b3ac"
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark">
+    <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+        <div class="flex-grow flex items-stretch">
+            <div class="grid w-full grid-cols-1 md:grid-cols-2">
+
+                <div class="relative hidden h-full flex-col items-center justify-center bg-subtle-light p-10 dark:bg-subtle-dark md:flex sticky top-0">
+                    <div class="absolute inset-0 bg-center bg-no-repeat bg-cover"
+                         style="background-image: url('https://images.unsplash.com/photo-1631549916768-4119b2d4f924?q=80&w=1974&auto=format&fit=crop'); opacity: 0.15;">
+                    </div>
+                    <div class="relative z-10 w-full max-w-md text-center">
+                        <div class="mx-auto mb-6 w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-lg text-primary animate-bounce">
+                            <span class="material-symbols-outlined" style="font-size: 64px;">health_and_safety</span>
+                        </div>
+                        <h1 class="text-3xl font-black leading-tight text-text-light dark:text-text-dark mb-2">Gia nhập cộng đồng<br>Sống Khỏe</h1>
+                        <p class="text-placeholder-light dark:text-placeholder-dark font-medium">Theo dõi sức khỏe và mua sắm tiện lợi ngay hôm nay.</p>
+                    </div>
+                </div>
+
+                <div class="flex w-full items-center justify-center bg-background-light p-6 dark:bg-background-dark sm:p-8 lg:p-12">
+                    <div class="w-full max-w-md">
+                        <div class="mb-6 text-left">
+                            <h1 class="text-text-light dark:text-text-dark text-4xl font-black leading-tight tracking-tight">Tạo tài khoản</h1>
+                            <h2 class="text-placeholder-light dark:text-placeholder-dark text-base font-normal mt-2">Điền thông tin để bắt đầu hành trình của bạn.</h2>
+                        </div>
+
+                        @using (Html.BeginForm("Register", "Account", FormMethod.Post, new { @class = "flex flex-col gap-5" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.ValidationSummary(true, "", new { @class = "text-red-500 font-bold text-sm" })
+
+                            <div>
+                                <label class="text-text-light dark:text-text-dark text-sm font-bold pb-1 block">Họ và tên</label>
+                                <div class="flex items-center rounded-lg border border-border-light bg-subtle-light dark:border-border-dark dark:bg-subtle-dark overflow-hidden focus-within:ring-2 focus-within:ring-primary/50 transition-all">
+                                    <div class="p-3 text-placeholder-light"><span class="material-symbols-outlined">badge</span></div>
+                                    @Html.TextBoxFor(m => m.FullName, new { @class = "w-full bg-transparent border-none text-text-light dark:text-text-dark placeholder-placeholder-light focus:ring-0", placeholder = "Nguyễn Văn A" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.FullName, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-text-light dark:text-text-dark text-sm font-bold pb-1 block">Số điện thoại</label>
+                                    <div class="flex items-center rounded-lg border border-border-light bg-subtle-light dark:border-border-dark dark:bg-subtle-dark overflow-hidden focus-within:ring-2 focus-within:ring-primary/50">
+                                        <div class="p-3 text-placeholder-light"><span class="material-symbols-outlined">call</span></div>
+                                        @Html.TextBoxFor(m => m.PhoneNumber, new { @class = "w-full bg-transparent border-none text-text-light dark:text-text-dark placeholder-placeholder-light focus:ring-0", placeholder = "09xxx" })
+                                    </div>
+                                    @Html.ValidationMessageFor(m => m.PhoneNumber, "", new { @class = "text-red-500 text-xs mt-1" })
+                                </div>
+                                <div>
+                                    <label class="text-text-light dark:text-text-dark text-sm font-bold pb-1 block">Email</label>
+                                    <div class="flex items-center rounded-lg border border-border-light bg-subtle-light dark:border-border-dark dark:bg-subtle-dark overflow-hidden focus-within:ring-2 focus-within:ring-primary/50">
+                                        <div class="p-3 text-placeholder-light"><span class="material-symbols-outlined">mail</span></div>
+                                        @Html.TextBoxFor(m => m.Email, new { @class = "w-full bg-transparent border-none text-text-light dark:text-text-dark placeholder-placeholder-light focus:ring-0", placeholder = "email@example.com" })
+                                    </div>
+                                    @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-red-500 text-xs mt-1" })
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-text-light dark:text-text-dark text-sm font-bold pb-1 block">Mật khẩu</label>
+                                <div class="flex items-center rounded-lg border border-border-light bg-subtle-light dark:border-border-dark dark:bg-subtle-dark overflow-hidden focus-within:ring-2 focus-within:ring-primary/50">
+                                    <div class="p-3 text-placeholder-light"><span class="material-symbols-outlined">lock</span></div>
+                                    @Html.PasswordFor(m => m.Password, new { @class = "w-full bg-transparent border-none text-text-light dark:text-text-dark placeholder-placeholder-light focus:ring-0", placeholder = "Tối thiểu 6 ký tự" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+
+                            <div>
+                                <label class="text-text-light dark:text-text-dark text-sm font-bold pb-1 block">Xác nhận mật khẩu</label>
+                                <div class="flex items-center rounded-lg border border-border-light bg-subtle-light dark:border-border-dark dark:bg-subtle-dark overflow-hidden focus-within:ring-2 focus-within:ring-primary/50">
+                                    <div class="p-3 text-placeholder-light"><span class="material-symbols-outlined">verified_user</span></div>
+                                    @Html.PasswordFor(m => m.ConfirmPassword, new { @class = "w-full bg-transparent border-none text-text-light dark:text-text-dark placeholder-placeholder-light focus:ring-0", placeholder = "Nhập lại mật khẩu" })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+
+                            <button class="mt-4 flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 bg-primary text-text-light text-base font-bold tracking-wide hover:bg-opacity-80 transition-all shadow-md transform hover:-translate-y-0.5" type="submit">
+                                ĐĂNG KÝ TÀI KHOẢN
+                            </button>
+                        }
+
+                        <p class="text-placeholder-light dark:text-placeholder-dark text-sm font-normal text-center pt-6">
+                            Đã có tài khoản? <a class="font-bold text-primary hover:underline" href="/Account/Login">Đăng nhập ngay</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

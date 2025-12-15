@@ -1,0 +1,139 @@
+﻿@model congnghephanmem.Models.LoginViewModel
+
+@{
+    Layout = null; // QUAN TRỌNG: Không dùng Layout chung để tránh xung đột CSS Bootstrap
+}
+
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Đăng nhập - Nhà Thuốc Online</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ecc8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#10221f",
+                        "text-light": "#0d1b19",
+                        "text-dark": "#e0f2ef",
+                        "subtle-light": "#e7f3f1",
+                        "subtle-dark": "#1a3833",
+                        "border-light": "#cfe7e3",
+                        "border-dark": "#2a5f56",
+                        "placeholder-light": "#4c9a8d",
+                        "placeholder-dark": "#85b3ac"
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark">
+    <div class="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+        <div class="flex-grow flex items-stretch">
+            <div class="grid w-full grid-cols-1 md:grid-cols-2">
+
+                <div class="relative hidden h-full flex-col items-center justify-center bg-subtle-light p-10 dark:bg-subtle-dark md:flex">
+                    <div class="absolute inset-0 bg-center bg-no-repeat bg-cover"
+                         style="background-image: url('https://images.unsplash.com/photo-1576091160550-217358c7e618?q=80&w=2070&auto=format&fit=crop'); opacity: 0.1;">
+                    </div>
+                    <div class="relative z-10 w-full max-w-md text-center">
+                        <div class="mx-auto mb-8 w-40 h-40 bg-white rounded-full flex items-center justify-center shadow-lg text-primary">
+                            <span class="material-symbols-outlined" style="font-size: 80px;">pharmacy_plus</span>
+                        </div>
+                        <h1 class="text-4xl font-black leading-tight tracking-tight text-text-light dark:text-text-dark">Sức khỏe của bạn<br>Là ưu tiên của chúng tôi</h1>
+                    </div>
+                </div>
+
+                <div class="flex w-full items-center justify-center bg-background-light p-6 dark:bg-background-dark sm:p-8 lg:p-12">
+                    <div class="w-full max-w-md">
+                        <div class="mb-8 text-left">
+                            <h1 class="text-text-light dark:text-text-dark text-4xl font-black leading-tight tracking-[-0.033em] sm:text-5xl">Đăng nhập</h1>
+                            <h2 class="text-placeholder-light dark:text-placeholder-dark text-base font-normal leading-normal mt-2">Chào mừng trở lại! Vui lòng nhập thông tin.</h2>
+                        </div>
+
+                        @using (Html.BeginForm("Login", "Account", FormMethod.Post, new { @class = "flex flex-col gap-6" }))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            @Html.ValidationSummary(true, "", new { @class = "text-red-500 text-sm font-bold" })
+
+                            <div class="flex flex-col w-full">
+                                <label class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2" for="Username">Email hoặc SĐT</label>
+                                <div class="flex w-full flex-1 items-stretch rounded-lg">
+                                    <div class="text-placeholder-light dark:text-placeholder-dark flex items-center justify-center rounded-l-lg border border-r-0 border-border-light bg-subtle-light p-3 dark:border-border-dark dark:bg-subtle-dark">
+                                        <span class="material-symbols-outlined" style="font-size: 24px;">person</span>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.Username, new
+                                    {
+                                        @class = "form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light bg-background-light dark:border-border-dark dark:bg-background-dark h-14 placeholder:text-placeholder-light dark:placeholder:text-placeholder-dark p-[15px] text-base font-normal leading-normal",
+                                        placeholder = "Nhập email hoặc số điện thoại"
+                                    })
+                                </div>
+                                @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+
+                            <div class="flex flex-col w-full">
+                                <label class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2" for="Password">Mật khẩu</label>
+                                <div class="flex w-full flex-1 items-stretch rounded-lg">
+                                    <div class="text-placeholder-light dark:text-placeholder-dark flex items-center justify-center rounded-l-lg border border-r-0 border-border-light bg-subtle-light p-3 dark:border-border-dark dark:bg-subtle-dark">
+                                        <span class="material-symbols-outlined" style="font-size: 24px;">lock</span>
+                                    </div>
+                                    @Html.PasswordFor(m => m.Password, new
+                                    {
+                                        @class = "form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light bg-background-light dark:border-border-dark dark:bg-background-dark h-14 placeholder:text-placeholder-light dark:placeholder:text-placeholder-dark p-[15px] rounded-r-none border-r-0 pr-2 text-base font-normal leading-normal",
+                                        placeholder = "Nhập mật khẩu"
+                                    })
+                                    <div class="text-placeholder-light dark:text-placeholder-dark flex border border-border-light bg-background-light dark:border-border-dark dark:bg-background-dark items-center justify-center pr-[15px] rounded-r-lg border-l-0 cursor-pointer">
+                                        <span class="material-symbols-outlined" style="font-size: 24px;">visibility</span>
+                                    </div>
+                                </div>
+                                @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-red-500 text-xs mt-1" })
+                            </div>
+
+                            <a href="#" class="text-placeholder-light dark:text-placeholder-dark text-sm font-normal leading-normal self-end underline cursor-pointer hover:text-primary transition-colors">Quên mật khẩu?</a>
+
+                            <button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 flex-1 bg-primary text-text-light text-base font-bold leading-normal tracking-[0.015em] hover:bg-opacity-90 transition-opacity" type="submit">
+                                <span class="truncate">Đăng nhập</span>
+                            </button>
+                        }
+
+                        <div class="relative flex items-center py-6">
+                            <div class="flex-grow border-t border-border-light dark:border-border-dark"></div>
+                            <span class="mx-4 flex-shrink text-sm text-placeholder-light dark:text-placeholder-dark">hoặc</span>
+                            <div class="flex-grow border-t border-border-light dark:border-border-dark"></div>
+                        </div>
+
+                        <div class="flex flex-col gap-4 sm:flex-row">
+                            <button class="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-border-light bg-background-light px-4 text-sm font-medium text-text-light hover:bg-subtle-light transition-colors">
+                                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                                <span>Google</span>
+                            </button>
+                            <button class="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-border-light bg-background-light px-4 text-sm font-medium text-text-light hover:bg-subtle-light transition-colors">
+                                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" class="w-5 h-5" alt="Facebook">
+                                <span>Facebook</span>
+                            </button>
+                        </div>
+
+                        <p class="text-placeholder-light dark:text-placeholder-dark text-sm font-normal leading-normal text-center pt-6">
+                            Chưa có tài khoản? <a class="font-bold text-primary hover:underline" href="/Account/Register">Đăng ký ngay</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

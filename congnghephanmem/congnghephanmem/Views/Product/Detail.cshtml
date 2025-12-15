@@ -1,0 +1,350 @@
+﻿@model congnghephanmem.Models.product
+
+@{
+    ViewBag.Title = Model.name;
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+
+    var images = ViewBag.Images as List<congnghephanmem.Models.product_images>; // Lưu ý: Tên class trong DB của bạn có s hay không? Kiểm tra lại nhé (product_image vs product_images)
+    var relatedProducts = ViewBag.RelatedProducts as List<congnghephanmem.Models.product>;
+    var ingredients = ViewBag.Ingredients as List<Dictionary<string, string>>;
+
+    var stats = ViewBag.RatingStats as congnghephanmem.ViewModels.ReviewStatsViewModel;
+
+    // Nếu stats null (trường hợp chưa có review nào hoặc lỗi), khởi tạo mặc định để không crash trang
+    if (stats == null)
+    {
+        stats = new congnghephanmem.ViewModels.ReviewStatsViewModel();
+    }
+
+    double avgRating = stats.AverageRating;
+    int totalReviews = stats.TotalReviews;
+}
+
+<style>
+    /* Ẩn mũi tên input number */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .quantity-input {
+        max-width: 50px;
+        text-align: center;
+        border: none;
+        outline: none;
+    }
+
+    .thumbnail-img {
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+        object-fit: cover;
+        height: 80px;
+        width: 80px;
+        border-radius: 8px;
+    }
+
+        .thumbnail-img.active, .thumbnail-img:hover {
+            border-color: var(--primary-color);
+        }
+
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 1rem 1.5rem;
+    }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .nav-tabs .nav-link:hover {
+            border-color: transparent;
+            color: var(--primary-color);
+        }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .quantity-input {
+        max-width: 50px;
+        text-align: center;
+        border: none;
+        outline: none;
+    }
+
+    .thumbnail-img {
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+        object-fit: cover;
+        height: 80px;
+        width: 80px;
+        border-radius: 8px;
+    }
+
+        .thumbnail-img.active, .thumbnail-img:hover {
+            border-color: var(--primary-color);
+        }
+
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 1rem 1.5rem;
+    }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .nav-tabs .nav-link:hover {
+            border-color: transparent;
+            color: var(--primary-color);
+        }
+
+    /* --- CSS MỚI CHO PHẦN ĐÁNH GIÁ --- */
+    .progress-custom {
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar-custom {
+        background-color: var(--primary-color);
+        border-radius: 10px;
+    }
+
+    .star-filled {
+        color: #FFC107;
+        font-variation-settings: 'FILL' 1;
+    }
+
+    .star-empty {
+        color: #FFC107;
+        font-variation-settings: 'FILL' 0;
+    }
+
+    .rating-big {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+</style>
+
+<div class="container py-4">
+
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none text-muted">@ViewBag.CategoryName</a></li>
+            <li class="breadcrumb-item active fw-bold text-dark" aria-current="page">@Model.name</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <div class="col-lg-6">
+            <div class="bg-white p-3 rounded-3 shadow-sm mb-3 text-center">
+                <img id="mainImage" src="@(string.IsNullOrEmpty(Model.thumbnail_url) ? "https://via.placeholder.com/500" : Model.thumbnail_url)" class="img-fluid rounded" style="max-height: 450px; object-fit: contain;" alt="@Model.name">
+            </div>
+            <div class="d-flex gap-2 overflow-auto pb-2">
+                <img src="@Model.thumbnail_url" class="thumbnail-img active" onclick="changeImage(this.src, this)">
+                @if (images != null)
+                {
+                    foreach (var img in images)
+                    {
+                        <img src="@img.image_url" class="thumbnail-img" onclick="changeImage(this.src, this)">
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6 d-flex flex-column gap-3">
+            <h1 class="fw-bolder lh-sm">@Model.name</h1>
+            <div class="d-flex align-items-end gap-3">
+                <h2 class="fw-bold text-primary-custom mb-0">@string.Format("{0:0,0}đ", Model.sale_price)</h2>
+                @if (Model.original_price > Model.sale_price)
+                {
+                    <span class="text-decoration-line-through text-muted fs-5">@string.Format("{0:0,0}đ", Model.original_price)</span>
+                }
+            </div>
+            <p class="text-muted">@Html.Raw(Model.description)</p>
+            <hr class="text-muted opacity-25">
+            <form action="/Cart/AddToCart" method="post" class="d-flex flex-column gap-4">
+                <input type="hidden" name="productId" value="@Model.id" />
+                <div>
+                    <label class="fw-bold mb-2 small text-uppercase text-muted">Số lượng</label>
+                    <div class="d-flex align-items-center border rounded-3 bg-white" style="width: fit-content;">
+                        <button type="button" class="btn btn-link text-dark text-decoration-none px-3" onclick="decreaseQty()">-</button>
+                        <input type="number" id="qtyInput" name="quantity" value="1" min="1" class="quantity-input fw-bold bg-transparent">
+                        <button type="button" class="btn btn-link text-dark text-decoration-none px-3" onclick="increaseQty()">+</button>
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-mint flex-fill py-3 rounded-3 d-flex align-items-center justify-content-center gap-2">
+                        <span class="material-symbols-outlined">add_shopping_cart</span> Thêm vào giỏ
+                    </button>
+                    <button type="button" class="btn btn-primary-custom flex-fill py-3 rounded-3 text-white shadow-sm">Mua Ngay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="mt-5 bg-white p-4 rounded-3 shadow-sm">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation"><button class="nav-link active" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc" type="button">Mô tả sản phẩm</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="usage-tab" data-bs-toggle="tab" data-bs-target="#usage" type="button">Liều dùng</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="ingredients-tab" data-bs-toggle="tab" data-bs-target="#ingredients" type="button">Thành phần</button></li>
+        </ul>
+        <div class="tab-content pt-4 px-2" id="myTabContent">
+            <div class="tab-pane fade show active" id="desc">@Html.Raw(Model.content)</div>
+            <div class="tab-pane fade" id="usage">
+                <p><strong>Liều dùng:</strong> @Model.dosage</p>
+                @if (!string.IsNullOrEmpty(Model.contraindications))
+                {<p class="text-danger"><strong>Chống chỉ định:</strong> @Model.contraindications</p>}
+            </div>
+            <div class="tab-pane fade" id="ingredients">
+                @if (ingredients != null && ingredients.Any())
+                {
+                    <table class="table table-striped table-hover" style="max-width: 600px;">
+                        <thead class="table-light"><tr><th>Hoạt chất</th><th>Hàm lượng</th></tr></thead>
+                        <tbody>
+                            @foreach (var item in ingredients)
+                            {
+                                <tr><td>@item["name"]</td><td>@item["amount"] @item["unit"]</td></tr>
+}
+                        </tbody>
+                    </table>
+                }
+                else
+                { <p>Đang cập nhật...</p>}
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-5" id="reviews">
+        <h3 class="fw-bold mb-4">Đánh giá sản phẩm</h3>
+
+        <div class="bg-white p-5 rounded-3 shadow-sm">
+            <div class="row align-items-center g-5">
+
+                <div class="col-md-4 text-center border-end-md">
+                    <div class="rating-big text-dark mb-2">@avgRating</div>
+
+                    <div class="mb-2">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            if (i <= Math.Round(avgRating))
+                            {
+                                <span class="material-symbols-outlined star-filled">star</span>
+                            }
+                            else
+                            {
+                                <span class="material-symbols-outlined star-empty">star</span>
+                            }
+                        }
+                    </div>
+                    <p class="text-muted mb-0">(@totalReviews đánh giá)</p>
+                </div>
+
+                <div class="col-md-8">
+                    @{
+                        // Hàm helper tính phần trăm để vẽ width cho progress bar
+                        Func<int, int> getPercent = (count) => totalReviews > 0 ? (int)((double)count / totalReviews * 100) : 0;
+                    }
+
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <span class="fw-bold" style="width: 10px;">5</span>
+                        <div class="progress-custom flex-grow-1">
+                            <div class="progress-bar-custom" style="width: @getPercent(stats.FiveStar)%"></div>
+                        </div>
+                        <span class="text-muted small" style="width: 35px; text-align: right;">@getPercent(stats.FiveStar)%</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <span class="fw-bold" style="width: 10px;">4</span>
+                        <div class="progress-custom flex-grow-1">
+                            <div class="progress-bar-custom" style="width: @getPercent(stats.FourStar)%"></div>
+                        </div>
+                        <span class="text-muted small" style="width: 35px; text-align: right;">@getPercent(stats.FourStar)%</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <span class="fw-bold" style="width: 10px;">3</span>
+                        <div class="progress-custom flex-grow-1">
+                            <div class="progress-bar-custom" style="width: @getPercent(stats.ThreeStar)%"></div>
+                        </div>
+                        <span class="text-muted small" style="width: 35px; text-align: right;">@getPercent(stats.ThreeStar)%</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <span class="fw-bold" style="width: 10px;">2</span>
+                        <div class="progress-custom flex-grow-1">
+                            <div class="progress-bar-custom" style="width: @getPercent(stats.TwoStar)%"></div>
+                        </div>
+                        <span class="text-muted small" style="width: 35px; text-align: right;">@getPercent(stats.TwoStar)%</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fw-bold" style="width: 10px;">1</span>
+                        <div class="progress-custom flex-grow-1">
+                            <div class="progress-bar-custom" style="width: @getPercent(stats.OneStar)%"></div>
+                        </div>
+                        <span class="text-muted small" style="width: 35px; text-align: right;">@getPercent(stats.OneStar)%</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-5">
+        <h3 class="fw-bold mb-4">Sản phẩm thường mua cùng</h3>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4">
+            @if (relatedProducts != null)
+            {
+                foreach (var item in relatedProducts)
+                {
+                    <div class="col">
+                        <div class="card card-product h-100 p-3">
+                            <img src="@item.thumbnail_url" class="card-img-top rounded mb-3" style="height: 180px; object-fit: contain;">
+                            <div class="card-body p-0 d-flex flex-column">
+                                <h6 class="card-title fw-bold mb-1 text-truncate">@item.name</h6>
+                                <p class="text-primary-custom fw-bold">@string.Format("{0:0,0}đ", item.sale_price)</p>
+                                <a href="/Product/Detail/@item.id" class="btn btn-mint w-100 mt-auto btn-sm">Xem chi tiết</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function changeImage(src, element) {
+        document.getElementById('mainImage').src = src;
+        var thumbnails = document.querySelectorAll('.thumbnail-img');
+        thumbnails.forEach(t => t.classList.remove('active'));
+        element.classList.add('active');
+    }
+    function increaseQty() {
+        var input = document.getElementById('qtyInput');
+        input.value = parseInt(input.value) + 1;
+    }
+    function decreaseQty() {
+        var input = document.getElementById('qtyInput');
+        if (parseInt(input.value) > 1) { input.value = parseInt(input.value) - 1; }
+    }
+</script>

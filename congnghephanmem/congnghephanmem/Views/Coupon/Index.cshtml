@@ -1,0 +1,86 @@
+﻿@model IEnumerable<congnghephanmem.Models.coupon>
+
+@{
+    ViewBag.Title = "Quản lý Mã Khuyến Mãi";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var db = new congnghephanmem.Models.db_cnpmEntities(); // Khởi tạo db context cục bộ để lấy điều kiện hiển thị nhanh
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold">Danh sách Mã Khuyến Mãi</h4>
+    <a href="@Url.Action("Create", "Coupon")" class="btn btn-success text-white fw-bold shadow-sm" style="background-color: var(--admin-primary); border: none;">
+        <span class="material-symbols-outlined align-middle fs-5">add</span> Tạo mã mới
+    </a>
+</div>
+
+<div class="chart-box">
+    <div class="table-responsive">
+        <table class="table table-borderless table-custom align-middle">
+            <thead>
+                <tr>
+                    <th>MÃ CODE</th>
+                    <th>LOẠI GIẢM GIÁ</th>
+                    <th>ĐIỀU KIỆN</th>
+                    <th>NGÀY TẠO</th>
+                    <th>TRẠNG THÁI</th>
+                    <th class="text-end">HÀNH ĐỘNG</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    // Lấy điều kiện đầu tiên để hiển thị thông tin
+                    var condition = db.coupon_conditions.FirstOrDefault(c => c.coupon_id == item.id);
+
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="material-symbols-outlined text-muted bg-light p-2 rounded">sell</span>
+                                <span class="fw-bold text-dark">@item.code</span>
+                            </div>
+                        </td>
+                        <td>
+                            @if (condition != null)
+                            {
+                                if (condition.discount_type == "PERCENTAGE")
+                                {
+                                    <span class="badge bg-info text-dark">Giảm @condition.discount_amount.ToString("0")%</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">Giảm @condition.discount_amount.ToString("#,##0")đ</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Chưa thiết lập</span>
+                            }
+                        </td>
+                        <td>
+                            @if (condition != null)
+                            {
+                                <small class="text-muted">Đơn tối thiểu: <b>@string.Format("{0:0,0}đ", decimal.Parse(condition.value))</b></small>
+                            }
+                        </td>
+                        <td>@item.created_at.Value.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @if (item.is_active == true)
+                            {
+                                <a href="@Url.Action("ToggleStatus", new { id = item.id })" class="status-badge status-success text-decoration-none" title="Nhấn để khóa">Đang hoạt động</a>
+                            }
+                            else
+                            {
+                                <a href="@Url.Action("ToggleStatus", new { id = item.id })" class="status-badge bg-secondary text-white text-decoration-none" title="Nhấn để kích hoạt">Đã khóa</a>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-light btn-sm text-danger" onclick="if(confirm('Bạn có chắc muốn xóa mã này?')) location.href='@Url.Action("Delete", new { id = item.id })'">
+                                <span class="material-symbols-outlined fs-6">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

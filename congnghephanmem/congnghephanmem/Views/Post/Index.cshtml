@@ -1,0 +1,67 @@
+﻿@model IEnumerable<congnghephanmem.Models.post>
+
+@{
+    ViewBag.Title = "Quản lý Bài viết";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var db = new congnghephanmem.Models.db_cnpmEntities();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold">Danh sách Bài viết</h4>
+    <a href="@Url.Action("Create", "Post")" class="btn btn-success text-white fw-bold shadow-sm" style="background-color: var(--admin-primary); border: none;">
+        <span class="material-symbols-outlined align-middle fs-5">edit_square</span> Viết bài mới
+    </a>
+</div>
+
+<div class="chart-box">
+    <div class="table-responsive">
+        <table class="table table-borderless table-custom align-middle">
+            <thead>
+                <tr>
+                    <th width="80">HÌNH ẢNH</th>
+                    <th width="30%">TIÊU ĐỀ</th>
+                    <th>CHUYÊN MỤC</th>
+                    <th>TÁC GIẢ</th>
+                    <th>TRẠNG THÁI</th>
+                    <th>NGÀY ĐĂNG</th>
+                    <th class="text-end">HÀNH ĐỘNG</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var catName = db.post_categories.Find(item.category_id)?.name ?? "Không có";
+                    var authorName = db.users.Find(item.author_id)?.full_name ?? "Ẩn danh";
+
+                    <tr>
+                        <td>
+                            <img src="@item.thumbnail_url" class="rounded" style="width: 60px; height: 40px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/60'" />
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 300px;">@item.title</div>
+                            <small class="text-muted">Slug: @item.slug</small>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">@catName</span></td>
+                        <td><small class="fw-bold text-secondary">@authorName</small></td>
+                        <td>
+                            @if (item.status == "PUBLISHED")
+                            {
+                                <span class="status-badge status-success">Đã xuất bản</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge bg-secondary text-white">Bản nháp</span>
+                            }
+                        </td>
+                        <td>@item.created_at.Value.ToString("dd/MM/yyyy")</td>
+                        <td class="text-end">
+                            <button class="btn btn-light btn-sm text-danger" onclick="if(confirm('Xóa bài viết này?')) location.href='@Url.Action("Delete", new { id = item.id })'">
+                                <span class="material-symbols-outlined fs-6">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

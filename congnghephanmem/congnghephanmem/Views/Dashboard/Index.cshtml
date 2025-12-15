@@ -1,0 +1,311 @@
+﻿@{
+    ViewBag.Title = "Tổng quan";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<style>
+    /* Card Stats */
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.02);
+        height: 100%;
+        transition: transform 0.2s;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .icon-blue {
+        background: #E3F5FF;
+        color: #0099FF;
+    }
+
+    .icon-green {
+        background: #E5F9F1;
+        color: #00C092;
+    }
+
+    .icon-orange {
+        background: #FFF4E5;
+        color: #FF9F43;
+    }
+
+    .icon-purple {
+        background: #F3E5F5;
+        color: #9C27B0;
+    }
+
+    .stat-value {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 10px 0 5px;
+        color: #111;
+    }
+
+    .stat-label {
+        color: #8A92A6;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .stat-trend {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .text-up {
+        color: #00C092;
+    }
+
+    .text-down {
+        color: #FF4D4D;
+    }
+
+    /* Charts Container */
+    .chart-box {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.02);
+        margin-bottom: 24px;
+    }
+
+    .chart-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #111;
+    }
+
+    /* Table */
+    .table-custom th {
+        color: #8A92A6;
+        font-weight: 600;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+    }
+
+    .table-custom td {
+        padding: 15px 10px;
+        vertical-align: middle;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-success {
+        background: #E5F9F1;
+        color: #00C092;
+    }
+
+    .status-pending {
+        background: #FFF4E5;
+        color: #FF9F43;
+    }
+</style>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Tổng doanh thu</div>
+                    <div class="stat-value">125.660.000đ</div>
+                    <div class="stat-trend text-up">+12% so với tháng trước</div>
+                </div>
+                <div class="stat-icon icon-blue">
+                    <span class="material-symbols-outlined">payments</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Đơn hàng mới</div>
+                    <div class="stat-value">89</div>
+                    <div class="stat-trend text-muted">Trong 24 giờ qua</div>
+                </div>
+                <div class="stat-icon icon-green">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Sản phẩm hết hàng</div>
+                    <div class="stat-value">12</div>
+                    <div class="stat-trend text-down">Cần nhập thêm</div>
+                </div>
+                <div class="stat-icon icon-orange">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Khách hàng mới</div>
+                    <div class="stat-value">35</div>
+                    <div class="stat-trend text-muted">Trong tuần này</div>
+                </div>
+                <div class="stat-icon icon-purple">
+                    <span class="material-symbols-outlined">person_add</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="chart-box h-100">
+            <h5 class="chart-title">Doanh thu 7 ngày qua</h5>
+            <div style="height: 300px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="chart-box h-100">
+            <h5 class="chart-title">Tỷ lệ đơn hàng</h5>
+            <div class="d-flex justify-content-center" style="height: 250px;">
+                <canvas id="orderStatusChart"></canvas>
+            </div>
+            <div class="mt-4 text-center d-flex justify-content-center gap-3">
+                <small><span class="text-success">●</span> Hoàn thành</small>
+                <small><span class="text-primary">●</span> Đang giao</small>
+                <small><span class="text-danger">●</span> Hủy</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="chart-box">
+    <h5 class="chart-title">Đơn hàng gần đây</h5>
+    <div class="table-responsive">
+        <table class="table table-borderless table-custom">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>TÊN KHÁCH HÀNG</th>
+                    <th>NGÀY</th>
+                    <th>SỐ TIỀN</th>
+                    <th>TRẠNG THÁI</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>#ORD-001</td>
+                    <td>Nguyễn Văn A</td>
+                    <td>12/12/2025</td>
+                    <td>1.200.000đ</td>
+                    <td><span class="status-badge status-success">Hoàn thành</span></td>
+                </tr>
+                <tr>
+                    <td>#ORD-002</td>
+                    <td>Trần Thị B</td>
+                    <td>12/12/2025</td>
+                    <td>850.000đ</td>
+                    <td><span class="status-badge status-pending">Đang giao</span></td>
+                </tr>
+                <tr>
+                    <td>#ORD-003</td>
+                    <td>Lê Văn C</td>
+                    <td>11/12/2025</td>
+                    <td>320.000đ</td>
+                    <td><span class="status-badge status-success">Hoàn thành</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // 1. Line Chart (Doanh thu)
+    const ctx1 = document.getElementById('revenueChart').getContext('2d');
+
+    // Tạo gradient xanh mint cho đẹp
+    let gradient = ctx1.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(0, 192, 146, 0.2)');
+    gradient.addColorStop(1, 'rgba(0, 192, 146, 0)');
+
+    new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+            datasets: [{
+                label: 'Doanh thu (triệu đồng)',
+                data: [12, 18, 5, 8, 4, 7, 15], // Dữ liệu giả lập đường cong
+                borderColor: '#00C092',
+                backgroundColor: gradient,
+                borderWidth: 3,
+                tension: 0.4, // Tạo đường cong mềm mại
+                fill: true,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#00C092',
+                pointBorderWidth: 2,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 2. Donut Chart (Trạng thái đơn)
+    const ctx2 = document.getElementById('orderStatusChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Hoàn thành', 'Đang giao', 'Hủy'],
+            datasets: [{
+                data: [65, 25, 10], // Tỷ lệ giả lập
+                backgroundColor: ['#00C092', '#3B82F6', '#EF4444'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%', // Độ dày vòng tròn
+            plugins: { legend: { display: false } }
+        }
+    });
+</script>
