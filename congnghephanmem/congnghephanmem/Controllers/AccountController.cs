@@ -1,6 +1,11 @@
-﻿using congnghephanmem.Models; 
+﻿using congnghephanmem.Models;
+using System.Web.Security;
+using congnghephanmem.ViewModels;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
 
 
@@ -46,6 +51,7 @@ namespace congnghephanmem.Controllers
                     Session["UserName"] = user.full_name;
                     Session["UserEmail"] = user.email;
                     Session["UserAvatar"] = user.avatar;
+                    FormsAuthentication.SetAuthCookie(user.email, false);
 
                     // Lấy Role của user (Giả sử user có 1 role chính)
                     var userRole = db.user_roles.FirstOrDefault(ur => ur.user_id == user.id);
@@ -60,6 +66,7 @@ namespace congnghephanmem.Controllers
                             return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
                         }
                     }
+                    MergeCookieCartToDatabase(user.id);
 
                     // Mặc định về trang chủ khách hàng
                     return RedirectToAction("Index", "Home");
@@ -75,11 +82,75 @@ namespace congnghephanmem.Controllers
             return View(model);
         }
 
+        private void MergeCookieCartToDatabase(int userId)
+        {
+            // 1. Đọc Cookie
+            var cookie = Request.Cookies["ShoppingCart"];
+            if (cookie == null || string.IsNullOrEmpty(cookie.Value)) return; // Không có gì để gộp
+
+            var cookieItems = JsonConvert.DeserializeObject<List<CartItemCookie>>(Server.UrlDecode(cookie.Value));
+            if (!cookieItems.Any()) return;
+
+            // 2. Lấy hoặc Tạo giỏ hàng DB
+            var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
+            if (cart == null)
+            {
+                cart = new cart { user_id = userId, created_at = DateTime.Now, total_items = 0, total_price = 0 };
+                db.carts.Add(cart);
+                db.SaveChanges();
+            }
+
+            // 3. Duyệt từng món trong Cookie đưa vào DB
+            foreach (var item in cookieItems)
+            {
+                var dbItem = db.cart_items.FirstOrDefault(ci => ci.cart_id == cart.id && ci.product_id == item.ProductId);
+                if (dbItem != null)
+                {
+                    dbItem.quantity += item.Quantity; // Cộng dồn nếu đã có
+                }
+                else
+                {
+                    var product = db.products.Find(item.ProductId);
+                    if (product != null)
+                    {
+                        var newItem = new cart_items
+                        {
+                            cart_id = cart.id,
+                            product_id = item.ProductId,
+                            quantity = item.Quantity,
+                            product_name = product.name,
+                            image = product.thumbnail_url,
+                            original_price = product.original_price,
+                            sale_price = product.sale_price,
+                            created_at = DateTime.Now
+                        };
+                        db.cart_items.Add(newItem);
+                    }
+                }
+            }
+            db.SaveChanges();
+
+            // 4. Tính lại tổng tiền cho User
+            var allItems = db.cart_items.Where(ci => ci.cart_id == cart.id).ToList();
+            cart.total_items = allItems.Sum(x => x.quantity);
+            cart.total_price = allItems.Sum(x => x.quantity * x.sale_price);
+            db.SaveChanges();
+
+            // 5. Xóa Cookie sau khi đã gộp xong
+            var expiredCookie = new HttpCookie("ShoppingCart") { Expires = DateTime.Now.AddDays(-1) };
+            Response.Cookies.Add(expiredCookie);
+        }
+
         // Đăng xuất
         public ActionResult Logout()
         {
-            Session.Clear(); // Xóa hết session
+            // Xóa Session
+            Session.Clear();
             Session.Abandon();
+
+            // THÊM DÒNG NÀY: Xóa Cookie xác thực
+            FormsAuthentication.SignOut();
+
             return RedirectToAction("Login");
         }
 

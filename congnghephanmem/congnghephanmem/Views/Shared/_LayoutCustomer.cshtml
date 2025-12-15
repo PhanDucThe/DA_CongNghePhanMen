@@ -270,7 +270,10 @@
                 <div class="d-flex align-items-center gap-3">
                     <a href="@Url.Action("Index", "Cart")" class="icon-btn position-relative text-decoration-none">
                         <span class="material-symbols-outlined">shopping_cart</span>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">3</span>
+
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                            @Html.Action("GetCartCount", "Cart")
+                        </span>
                     </a>
 
                     @if (Session["User"] != null)

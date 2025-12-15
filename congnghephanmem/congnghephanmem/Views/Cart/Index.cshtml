@@ -1,0 +1,274 @@
+﻿@model congnghephanmem.ViewModels.CartMainViewModel
+
+@{
+    ViewBag.Title = "Giỏ hàng";
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+
+    decimal missingForFreeShip = Model.FreeShipThreshold - Model.SubTotal;
+}
+
+<style>
+    /* Stepper Header */
+    .step-circle {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .bg-step-active {
+        background-color: var(--primary-color);
+        color: #111;
+    }
+
+    .bg-step-inactive {
+        background-color: #e9ecef;
+        color: #6c757d;
+    }
+
+    .text-step-active {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+
+    /* Cart Items */
+    .cart-item-img {
+        width: 70px;
+        height: 70px;
+        border-radius: 8px;
+        background-size: cover;
+        background-position: center;
+        border: 1px solid #eee;
+    }
+
+    .qty-btn {
+        border: none;
+        background: #f3f4f6;
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+        color: #555;
+    }
+
+        .qty-btn:hover {
+            background: #e0e0e0;
+        }
+
+    .qty-input {
+        width: 40px;
+        text-align: center;
+        border: none;
+        background: transparent;
+        font-weight: 600;
+        outline: none;
+    }
+
+    /* Summary Box */
+    .summary-box {
+        background: white;
+        border-radius: 12px;
+        position: sticky;
+        top: 100px;
+    }
+
+    /* Free Ship Bar */
+    .freeship-alert {
+        background-color: rgba(19, 236, 200, 0.1);
+        border: 1px solid rgba(19, 236, 200, 0.3);
+        color: #009688;
+        border-radius: 8px;
+    }
+
+    /* Recommendation */
+    .rec-card {
+        transition: transform 0.2s;
+        border: none;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+
+        .rec-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+</style>
+
+<div class="bg-white border-bottom py-3 sticky-top" style="top: 60px; z-index: 90;">
+    <div class="container d-flex justify-content-between align-items-center">
+        <h5 class="m-0 fw-bold d-none d-md-block">Giỏ hàng (@Model.Items.Sum(x => x.Quantity))</h5>
+
+        <div class="d-flex align-items-center gap-3 text-sm mx-auto mx-md-0">
+            <div class="d-flex align-items-center gap-2">
+                <span class="step-circle bg-step-active">1</span>
+                <span class="text-step-active">Giỏ hàng</span>
+            </div>
+            <span class="text-muted">></span>
+            <div class="d-flex align-items-center gap-2 text-muted">
+                <span class="step-circle bg-step-inactive">2</span>
+                <span>Thanh toán</span>
+            </div>
+            <span class="text-muted">></span>
+            <div class="d-flex align-items-center gap-2 text-muted">
+                <span class="step-circle bg-step-inactive">3</span>
+                <span>Hoàn tất</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+
+    @if (Model.Items.Count > 0)
+    {
+        <div class="row g-4">
+            <div class="col-lg-8">
+
+                <div class="freeship-alert p-3 mb-4 d-flex align-items-center gap-3">
+                    <span class="material-symbols-outlined fs-3">local_shipping</span>
+                    <div>
+                        @if (missingForFreeShip > 0)
+                        {
+                            <span>Mua thêm <b class="fw-bold text-dark">@string.Format("{0:0,0}đ", missingForFreeShip)</b> để được <b>Freeship</b></span>
+                        }
+                        else
+                        {
+                            <span class="fw-bold">Bạn đã được Miễn Phí Vận Chuyển!</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="d-none d-md-flex text-muted small fw-bold mb-3 px-3">
+                    <div style="width: 45%;">Sản phẩm</div>
+                    <div style="width: 20%;">Đơn giá</div>
+                    <div style="width: 20%;">Số lượng</div>
+                    <div style="width: 15%;" class="text-end">Thành tiền</div>
+                </div>
+
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var item in Model.Items)
+                    {
+                        <div class="bg-white p-3 rounded-3 shadow-sm d-flex flex-wrap align-items-center">
+
+                            <div class="d-flex align-items-center gap-3" style="width: 45%; min-width: 250px;">
+                                <div class="cart-item-img flex-shrink-0" style="background-image: url('@item.ProductImage');"></div>
+                                <div>
+                                    <a href="/Product/Detail/@item.ProductId" class="text-decoration-none text-dark fw-bold d-block text-truncate" style="max-width: 180px;">@item.ProductName</a>
+                                    <span class="d-md-none text-muted small">@string.Format("{0:0,0}đ", item.Price)</span>
+                                </div>
+                            </div>
+
+                            <div class="d-none d-md-block fw-bold text-muted" style="width: 20%;">
+                                @string.Format("{0:0,0}đ", item.Price)
+                            </div>
+
+                            <div style="width: 20%;">
+                                <div class="d-flex align-items-center border rounded px-1" style="width: fit-content;">
+                                    <button class="qty-btn" onclick="updateQty(@item.ProductId, @item.Quantity - 1)">-</button>
+                                    <input type="text" class="qty-input" value="@item.Quantity" readonly>
+                                    <button class="qty-btn" onclick="updateQty(@item.ProductId, @item.Quantity + 1)">+</button>
+                                </div>
+                            </div>
+
+                            <div style="width: 15%;" class="d-flex align-items-center justify-content-end gap-3 flex-grow-1">
+                                <span class="fw-bold text-primary-custom">@string.Format("{0:0,0}đ", item.Total)</span>
+                                <a href="@Url.Action("Remove", new { productId = item.ProductId })" class="text-muted hover-danger">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="summary-box p-4 shadow-sm">
+                    <h5 class="fw-bold mb-4">Tóm tắt đơn hàng</h5>
+
+                    <div class="d-flex justify-content-between mb-2 text-muted">
+                        <span>Tạm tính</span>
+                        <span class="fw-bold text-dark">@string.Format("{0:0,0}đ", Model.SubTotal)</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2 text-muted">
+                        <span>Phí vận chuyển</span>
+                        @if (Model.ShippingFee == 0)
+                        {
+                            <span class="fw-bold text-success">Miễn phí</span>
+                        }
+                        else
+                        {
+                            <span class="fw-bold text-dark">@string.Format("{0:0,0}đ", Model.ShippingFee)</span>
+                        }
+                    </div>
+
+                    <hr class="text-muted opacity-25">
+
+                    <div class="input-group mb-4">
+                        <input type="text" class="form-control" placeholder="Mã giảm giá">
+                        <button class="btn btn-mint text-white" type="button">Áp dụng</button>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fw-bold fs-5">Tổng cộng</span>
+                        <span class="fw-bold fs-4 text-primary-custom">@string.Format("{0:0,0}đ", Model.Total)</span>
+                    </div>
+
+                    @if (Session["User"] != null)
+                    {
+                        <a href="@Url.Action("Index", "Checkout")" class="btn btn-primary-custom w-100 py-3 rounded-3 fw-bold shadow-sm">TIẾN HÀNH THANH TOÁN</a>
+                    }
+                    else
+                    {
+                        <a href="/Account/Login?returnUrl=/Cart" class="btn btn-primary-custom w-100 py-3 rounded-3 fw-bold shadow-sm">ĐĂNG NHẬP ĐỂ THANH TOÁN</a>
+                        <div class="text-center mt-2 small text-muted">Bạn cần đăng nhập để tích điểm và thanh toán</div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <img src="https://cdn-icons-png.flaticon.com/512/11329/11329060.png" width="150" class="mb-3 opacity-50">
+            <h4>Giỏ hàng của bạn đang trống</h4>
+            <p class="text-muted">Hãy dạo quanh cửa hàng để tìm sản phẩm ưng ý nhé!</p>
+            <a href="/" class="btn btn-mint mt-3">Tiếp tục mua sắm</a>
+        </div>
+    }
+
+    <div class="mt-5 pt-4 border-top">
+        <h4 class="fw-bold mb-4">Có thể bạn cần thêm</h4>
+        <div class="row row-cols-2 row-cols-md-5 g-3">
+            @foreach (var prod in Model.Recommendations)
+            {
+                <div class="col">
+                    <div class="rec-card h-100 p-3 d-flex flex-column">
+                        <div class="bg-light rounded mb-2" style="background-image: url('@prod.thumbnail_url'); height: 120px; background-size: contain; background-repeat: no-repeat; background-position: center;"></div>
+                        <h6 class="fw-bold text-truncate mb-1">@prod.name</h6>
+                        <p class="text-primary-custom fw-bold small">@string.Format("{0:0,0}đ", prod.sale_price)</p>
+
+                        <form action="/Cart/AddToCart" method="post" class="mt-auto">
+                            <input type="hidden" name="productId" value="@prod.id" />
+                            <input type="hidden" name="quantity" value="1" />
+                            <button type="submit" class="btn btn-mint w-100 btn-sm">Thêm</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function updateQty(id, newQty) {
+        if (newQty < 1) return;
+        // Gọi về Controller để update và load lại trang
+        window.location.href = `/Cart/UpdateQuantity?productId=${id}&quantity=${newQty}`;
+    }
+</script>

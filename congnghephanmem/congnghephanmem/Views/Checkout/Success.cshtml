@@ -1,0 +1,168 @@
+﻿@model congnghephanmem.Models.order
+
+@{
+    ViewBag.Title = "Đặt hàng thành công";
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+
+    // Tính ngày giao dự kiến (ví dụ: +3 ngày từ ngày đặt)
+    var deliveryDateStart = Model.created_at.Value.AddDays(2);
+    var deliveryDateEnd = Model.created_at.Value.AddDays(4);
+}
+
+<style>
+    /* Custom CSS để giống mẫu Tailwind */
+    .success-icon-box {
+        width: 80px;
+        height: 80px;
+        background-color: rgba(19, 236, 200, 0.15); /* Màu mint nhạt */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .order-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        background: white;
+    }
+
+    .item-img {
+        width: 64px;
+        height: 64px;
+        border-radius: 8px;
+        background-size: cover;
+        background-position: center;
+        border: 1px solid #f3f4f6;
+    }
+
+    .label-text {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    .value-text {
+        color: #111827;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+
+            <div class="d-flex flex-column align-items-center text-center mb-5">
+                <div class="success-icon-box">
+                    <span class="material-symbols-outlined text-primary-custom" style="font-size: 48px;">check_circle</span>
+                </div>
+
+                <h2 class="fw-bold mb-2">Đơn hàng của bạn đã được đặt thành công!</h2>
+                <p class="text-muted mb-4" style="max-width: 500px;">
+                    Cảm ơn bạn đã mua sắm! Một email xác nhận đã được gửi đến <b>@Model.user.email</b>.
+                </p>
+
+                <div class="bg-light px-4 py-2 rounded-pill border">
+                    <span class="text-muted small">Mã đơn hàng:</span>
+                    <span class="fw-bold text-dark">#@Model.id</span>
+                </div>
+            </div>
+
+            <div class="order-card p-4 p-md-5">
+                <h5 class="fw-bold mb-4">Tóm tắt đơn hàng</h5>
+
+                <div class="d-flex flex-column gap-3 mb-4">
+                    @foreach (var item in Model.order_items)
+                    {
+                        var product = item.product; // Lấy thông tin sản phẩm qua navigation property
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="item-img flex-shrink-0" style="background-image: url('@product.thumbnail_url');"></div>
+                                <div>
+                                    <h6 class="mb-1 fw-bold text-dark text-truncate" style="max-width: 200px;">@product.name</h6>
+                                    <small class="text-muted">Số lượng: @item.quantity</small>
+                                </div>
+                            </div>
+                            <span class="fw-bold">@string.Format("{0:0,0}đ", item.price * item.quantity)</span>
+                        </div>
+                    }
+                </div>
+
+                <hr class="text-muted opacity-25 my-4">
+
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="label-text">Tạm tính</span>
+                        <span class="text-dark">@string.Format("{0:0,0}đ", Model.subtotal_money)</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="label-text">Phí vận chuyển</span>
+                        <span class="text-dark">@string.Format("{0:0,0}đ", Model.shipping_fee)</span>
+                    </div>
+                    @if (Model.discount_amount > 0)
+                    {
+                        <div class="d-flex justify-content-between">
+                            <span class="label-text">Giảm giá</span>
+                            <span class="text-success">-@string.Format("{0:0,0}đ", Model.discount_amount)</span>
+                        </div>
+                    }
+                    <div class="d-flex justify-content-between mt-2 pt-2 border-top">
+                        <span class="fw-bold fs-5">Tổng cộng</span>
+                        <span class="fw-bold fs-5 text-primary-custom">@string.Format("{0:0,0}đ", Model.total_money)</span>
+                    </div>
+                </div>
+
+                <hr class="text-muted opacity-25 my-4">
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Thông tin giao hàng</h6>
+                        <div class="d-flex flex-column gap-1">
+                            <span class="value-text">@Model.full_name</span>
+                            <span class="label-text">@Model.phone_number</span>
+                            <span class="label-text">@Model.shipping_address</span>
+                            <div class="mt-2 text-primary-custom small bg-light d-inline-block px-2 py-1 rounded">
+                                <strong>Dự kiến giao:</strong> @deliveryDateStart.ToString("dd/MM") - @deliveryDateEnd.ToString("dd/MM/yyyy")
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Phương thức thanh toán</h6>
+                        @if (Model.payment_method == "COD")
+                        {
+                            <span class="value-text">Thanh toán khi nhận hàng (COD)</span>
+                        }
+                        else if (Model.payment_method == "BANK")
+                        {
+                            <span class="value-text">Chuyển khoản ngân hàng</span>
+                            <p class="small text-muted mt-1">Vui lòng chuyển khoản với nội dung: <b>DH @Model.id</b></p>
+                        }
+                        else
+                        {
+                            <span class="value-text">@Model.payment_method</span>
+                        }
+
+                        <div class="mt-3">
+                            <h6 class="fw-bold mb-1">Ghi chú</h6>
+                            <span class="label-text fst-italic">"@((string.IsNullOrEmpty(Model.note)) ? "Không có" : Model.note)"</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mt-5">
+                <a href="/" class="btn btn-primary-custom px-5 py-3 rounded-3 fw-bold shadow-sm text-uppercase">
+                    Tiếp tục mua sắm
+                </a>
+                <a href="/Order/History" class="btn btn-light border px-5 py-3 rounded-3 fw-bold text-muted text-uppercase">
+                    Xem lịch sử đơn hàng
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
