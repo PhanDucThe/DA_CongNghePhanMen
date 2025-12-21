@@ -13,11 +13,28 @@ namespace congnghephanmem
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
+
+
+            routes.MapRoute(
+                name: "BlogDetail",
+                url: "bai-viet/{slug}",
+                defaults: new { controller = "Blog", action = "Detail", slug = UrlParameter.Optional }
+            );
+
+
+            routes.MapRoute(
+                name: "BlogIndex",
+                url: "goc-suc-khoe",
+                defaults: new { controller = "Blog", action = "Index" }
+            );
+
             routes.MapRoute(
                 name: "Default",
                 url: "{controller}/{action}/{id}",
                 defaults: new { controller = "Home", action = "Index", id = UrlParameter.Optional }
             );
+
+
         }
     }
 }

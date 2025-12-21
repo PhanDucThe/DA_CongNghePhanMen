@@ -1,0 +1,30 @@
+﻿@{
+    ViewBag.Title = "Thanh toán thất bại";
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="mb-4">
+                <span class="material-symbols-outlined text-danger" style="font-size: 80px;">cancel</span>
+            </div>
+
+            <h2 class="text-danger fw-bold mb-3">Thanh toán không thành công!</h2>
+
+            <p class="text-muted mb-4">
+                @ViewBag.Message <br />
+                Đơn hàng của bạn chưa được thanh toán. Vui lòng kiểm tra lại hoặc chọn phương thức thanh toán khác.
+            </p>
+
+            <div class="d-flex justify-content-center gap-3">
+                <a href="@Url.Action("Index", "Checkout")" class="btn btn-primary px-4">
+                    Thử lại / Thanh toán lại
+                </a>
+                <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary px-4">
+                    Về trang chủ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

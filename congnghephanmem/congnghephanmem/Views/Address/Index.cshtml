@@ -1,0 +1,155 @@
+﻿@model IEnumerable<congnghephanmem.Models.user_addresses>
+
+@{
+    ViewBag.Title = "Sổ địa chỉ";
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+
+    var currentUser = (congnghephanmem.Models.user)Session["User"];
+    string avatar = Session["UserAvatar"] as string ?? "/Content/images/default-user.png";
+}
+
+<style>
+    .profile-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+    }
+
+    .profile-nav .nav-link {
+        color: #64748b;
+        font-weight: 500;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .profile-nav .nav-link:hover, .profile-nav .nav-link.active {
+            background-color: rgba(19, 236, 200, 0.1);
+            color: #13ecc8;
+        }
+
+    .address-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        position: relative;
+        transition: all 0.2s;
+        height: 100%;
+    }
+
+        .address-card:hover {
+            border-color: #13ecc8;
+            box-shadow: 0 4px 15px rgba(19, 236, 200, 0.1);
+        }
+
+        .address-card.is-default {
+            border: 2px solid #13ecc8;
+            background-color: rgba(19, 236, 200, 0.02);
+        }
+
+    .badge-default {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #13ecc8;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="profile-card p-4 h-100">
+                <div class="text-center mb-4">
+                    <img src="@avatar" class="rounded-circle mb-3 shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                    <h6 class="fw-bold text-dark m-0">@Session["UserName"]</h6>
+                </div>
+                <div class="nav flex-column profile-nav">
+                    <a href="@Url.Action("Profile", "Account")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">person</span> Thông tin tài khoản
+                    </a>
+                    <a href="@Url.Action("Index", "Address")" class="nav-link active">
+                        <span class="material-symbols-outlined fs-5">location_on</span> Sổ địa chỉ
+                    </a>
+                    <a href="@Url.Action("History", "Order")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">shopping_bag</span> Lịch sử đơn hàng
+                    </a>
+                    <a href="@Url.Action("ChangePassword", "Account")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">lock</span> Đổi mật khẩu
+                    </a>
+                    <a href="@Url.Action("Logout", "Account")" class="nav-link text-danger mt-3">
+                        <span class="material-symbols-outlined fs-5">logout</span> Đăng xuất
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="profile-card p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold text-dark m-0">Sổ địa chỉ</h4>
+                    <a href="@Url.Action("Create")" class="btn btn-primary-custom text-white fw-bold d-flex align-items-center gap-2 shadow-sm rounded-3">
+                        <span class="material-symbols-outlined">add</span> Thêm địa chỉ mới
+                    </a>
+                </div>
+
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger text-small">@TempData["Error"]</div>
+                }
+
+                <div class="row g-3">
+                    @if (Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <div class="col-md-6">
+                                <div class="address-card @(item.is_default == true ? "is-default" : "")">
+                                    @if (item.is_default == true)
+                                    {
+                                        <span class="badge-default">Mặc định</span>
+                                    }
+
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="fw-bold text-dark fs-5">@item.recipient_name</span>
+                                    </div>
+                                    <p class="text-muted mb-1 small"><i class="material-symbols-outlined align-middle fs-6">call</i> @item.phone_number</p>
+                                    <p class="text-secondary mb-3 small"><i class="material-symbols-outlined align-middle fs-6">home</i> @item.address_line</p>
+
+                                    <div class="d-flex gap-2 mt-auto pt-3 border-top border-light">
+                                        @if (item.is_default != true)
+                                        {
+                                            <a href="@Url.Action("SetDefault", new { id = item.id })" class="text-decoration-none text-primary fw-bold small">Thiết lập mặc định</a>
+                                            <span class="text-muted">|</span>
+                                            <a href="@Url.Action("Delete", new { id = item.id })" class="text-decoration-none text-danger fw-bold small" onclick="return confirm('Bạn có chắc muốn xóa địa chỉ này?');">Xóa</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-success small fw-bold"><i class="material-symbols-outlined align-middle fs-6">check</i> Đang sử dụng</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12 text-center py-5">
+                            <img src="https://cdn-icons-png.flaticon.com/512/3710/3710274.png" width="80" class="opacity-50 mb-3" />
+                            <p class="text-muted">Bạn chưa lưu địa chỉ nào.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

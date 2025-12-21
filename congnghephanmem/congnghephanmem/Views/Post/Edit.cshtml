@@ -1,0 +1,137 @@
+﻿@model congnghephanmem.ViewModels.PostViewModel
+
+@{
+    ViewBag.Title = "Chỉnh sửa bài viết";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
+<div class="row justify-content-center">
+    <div class="col-xl-10 col-lg-12">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <a href="@Url.Action("Index")" class="btn btn-light border shadow-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" title="Quay lại">
+                    <span class="material-symbols-outlined text-muted">arrow_back</span>
+                </a>
+                <div>
+                    <h4 class="fw-bold m-0 text-dark">Chỉnh sửa bài viết</h4>
+                    <p class="text-muted small m-0">Cập nhật nội dung cho bài viết #@Model.Id</p>
+                </div>
+            </div>
+
+            @if (Model.Status == "PUBLISHED")
+            {
+                <a href="/bai-viet/@Model.Id" target="_blank" class="btn btn-outline-primary btn-sm fw-bold">
+                    <span class="material-symbols-outlined align-middle fs-6">visibility</span> Xem bài viết
+                </a>
+            }
+        </div>
+
+        @using (Html.BeginForm("Edit", "Post", FormMethod.Post, new { enctype = "multipart/form-data" }))
+        {
+            @Html.AntiForgeryToken()
+
+            @Html.HiddenFor(m => m.Id)
+            @Html.HiddenFor(m => m.CurrentThumbnailUrl)
+
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger mb-4" })
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="fw-bold m-0 text-primary">Nội dung bài viết</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark">Tiêu đề bài viết <span class="text-danger">*</span></label>
+                                @Html.TextBoxFor(m => m.Title, new { @class = "form-control form-control-lg fw-bold", placeholder = "Nhập tiêu đề..." })
+                                @Html.ValidationMessageFor(m => m.Title, "", new { @class = "text-danger small mt-1" })
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark">Tóm tắt ngắn (Excerpt)</label>
+                                @Html.TextAreaFor(m => m.Excerpt, new { @class = "form-control", rows = "3", placeholder = "Mô tả ngắn gọn..." })
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark">Nội dung chi tiết</label>
+                                @Html.TextAreaFor(m => m.Content, new { @id = "editorContent" })
+                                @Html.ValidationMessageFor(m => m.Content, "", new { @class = "text-danger small mt-1" })
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 border-bottom pb-2">Cập nhật</h6>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">Trạng thái hiển thị</label>
+                                @Html.DropDownListFor(m => m.Status, new List<SelectListItem>
+                                {
+                                    new SelectListItem { Text = "🟢 Đã xuất bản (Public)", Value = "PUBLISHED" },
+                                    new SelectListItem { Text = "⚪ Bản nháp (Draft)", Value = "DRAFT" }
+                                }, new { @class = "form-select fw-bold" })
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small text-muted">Chuyên mục <span class="text-danger">*</span></label>
+                                @Html.DropDownListFor(m => m.CategoryId, (SelectList)ViewBag.Categories, "--- Chọn chuyên mục ---", new { @class = "form-select" })
+                                @Html.ValidationMessageFor(m => m.CategoryId, "", new { @class = "text-danger small mt-1" })
+                            </div>
+
+                            <button type="submit" class="btn btn-warning text-dark w-100 fw-bold py-2 shadow-sm">
+                                <span class="material-symbols-outlined align-middle fs-6">save</span> Lưu thay đổi
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-light w-100 fw-bold py-2 mt-2 text-muted">Hủy bỏ</a>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 border-bottom pb-2">Ảnh đại diện</h6>
+
+                            <div class="text-center mb-3 p-2 bg-light rounded border border-dashed">
+                                <img id="previewImg"
+                                     src="@(string.IsNullOrEmpty(Model.CurrentThumbnailUrl) ? "/Content/images/no-image.png" : Model.CurrentThumbnailUrl)"
+                                     class="img-fluid rounded shadow-sm"
+                                     style="max-height: 200px; object-fit: cover; width: 100%;" />
+                            </div>
+
+                            <div class="d-grid">
+                                <label for="ThumbnailImage" class="btn btn-outline-primary btn-sm fw-bold">
+                                    <span class="material-symbols-outlined align-middle fs-6">upload</span> Tải ảnh mới lên
+                                </label>
+                                <input type="file" name="ThumbnailImage" id="ThumbnailImage" class="d-none" accept="image/*" onchange="previewFile(this);" />
+                            </div>
+                            <div class="form-text small text-center mt-2">Nếu không chọn, sẽ giữ nguyên ảnh cũ.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    CKEDITOR.replace('editorContent', {
+        height: 450,
+        language: 'vi',
+        removeButtons: 'Save,NewPage,ExportPdf,Preview,Print',
+    });
+
+    function previewFile(input) {
+        var file = input.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById("previewImg").src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+</script>

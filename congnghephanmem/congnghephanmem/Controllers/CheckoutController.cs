@@ -1,13 +1,17 @@
-﻿using congnghephanmem.Models;
+﻿using CloudinaryDotNet.Core;
+using congnghephanmem.Helpers;
+using congnghephanmem.Models;
 using congnghephanmem.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Transactions;
 using System.Web.Mvc;
 
 namespace congnghephanmem.Controllers
 {
-    // Yêu cầu đăng nhập mới được vào trang này
     [Authorize]
     public class CheckoutController : Controller
     {
@@ -16,16 +20,19 @@ namespace congnghephanmem.Controllers
         // GET: /Checkout
         public ActionResult Index()
         {
-            int userId = (int)Session["UserID"];
-            var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
+            if (Session["UserID"] == null)
+            {
+                return RedirectToAction("Login", "Account", new { returnUrl = "/Checkout" });
+            }
 
-            // Nếu giỏ hàng trống -> Đá về trang chủ
+            int userId = (int)Session["UserID"];
+
+            var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
             if (cart == null || cart.total_items == 0)
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            // Lấy danh sách sản phẩm trong giỏ để hiển thị
             var cartItems = (from ci in db.cart_items
                              join p in db.products on ci.product_id equals p.id
                              where ci.cart_id == cart.id
@@ -38,109 +45,177 @@ namespace congnghephanmem.Controllers
                                  Quantity = ci.quantity
                              }).ToList();
 
+            decimal subTotal = cartItems.Sum(x => x.Total);
+            decimal shippingFee = ShippingHelper.CalculateFee(subTotal, "STANDARD");
+
+            decimal discountAmount = 0;
+            if (Session["DiscountAmount"] != null)
+            {
+                discountAmount = (decimal)Session["DiscountAmount"];
+                if (discountAmount > subTotal) discountAmount = subTotal;
+            }
+
+            var user = db.users.Find(userId);
+            var defaultAddress = db.user_addresses
+                                   .FirstOrDefault(a => a.user_id == userId && a.is_default == true);
+
             var model = new CheckoutViewModel
             {
-                // Điền sẵn thông tin người dùng nếu có
-                FullName = Session["UserName"] as string,
-                PhoneNumber = db.users.Find(userId)?.phone_number,
-
+                FullName = defaultAddress != null ? defaultAddress.recipient_name : user.full_name,
+                PhoneNumber = defaultAddress != null ? defaultAddress.phone_number : user.phone_number,
+                Address = defaultAddress != null ? defaultAddress.address_line : "",
                 CartItems = cartItems,
-                SubTotal = cartItems.Sum(x => x.Total),
-                ShippingFee = 20000 // Mặc định phí ship
+                SubTotal = subTotal,
+                ShippingMethod = "STANDARD",
+                ShippingFee = shippingFee,
+                DiscountAmount = discountAmount,
+                TotalAmount = subTotal + shippingFee - discountAmount
             };
-
-            // Logic tính tổng tiền
-            model.TotalAmount = model.SubTotal + model.ShippingFee;
 
             return View(model);
         }
 
-        // POST: /Checkout/ProcessOrder
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult ProcessOrder(CheckoutViewModel model)
         {
-            // ... (Code lấy userId và cart giữ nguyên) ...
             int userId = (int)Session["UserID"];
-            var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
-            var dbItems = db.cart_items.Where(ci => ci.cart_id == cart.id).ToList();
 
+            var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
+            if (cart == null) return RedirectToAction("Index", "Home");
+
+            var dbItems = db.cart_items.Where(ci => ci.cart_id == cart.id).ToList();
             if (dbItems.Count == 0) return RedirectToAction("Index", "Home");
 
-            try
+            decimal subTotal = dbItems.Sum(x => x.sale_price * x.quantity);
+            decimal shippingFee = ShippingHelper.CalculateFee(subTotal, model.ShippingMethod);
+
+            decimal discountAmount = 0;
+            if (Session["DiscountAmount"] != null)
             {
-                var newOrder = new order
+                discountAmount = Convert.ToDecimal(Session["DiscountAmount"]);
+            }
+
+            decimal totalMoney = subTotal + shippingFee - discountAmount;
+            if (totalMoney < 0) totalMoney = 0;
+
+   
+            using (var scope = new TransactionScope())
+            {
+                try
                 {
-                    user_id = userId,
-                    full_name = model.FullName ?? "", // Nếu tên null thì lưu rỗng
-                    phone_number = model.PhoneNumber ?? "",
-
-                    // --- FIX LỖI TẠI ĐÂY: Thêm fallback nếu địa chỉ bị null ---
-                    shipping_address = model.Address ?? "Nhận tại quầy",
-
-                    note = model.Note ?? "",
-                    shipping_method = model.ShippingMethod,
-                    payment_method = model.PaymentMethod,
-                    subtotal_money = dbItems.Sum(x => x.sale_price * x.quantity),
-                    shipping_fee = (model.ShippingMethod == "EXPRESS") ? 40000 : 20000,
-                    discount_amount = 0,
-                    status = "PENDING_CONFIRMATION",
-                    payment_status = "UNPAID",
-                    order_date = DateTime.Now,
-                    created_at = DateTime.Now,
-
-                    // Các trường bắt buộc khác
-                    updated_at = DateTime.Now,
-                    tracking_number = "",
-                    created_by = Session["UserName"] as string ?? "Customer",
-                    updated_by = ""
-                };
-
-                db.orders.Add(newOrder);
-                db.SaveChanges();
-
-                // ... (Đoạn code lưu Order Items và Xóa giỏ hàng bên dưới giữ nguyên) ...
-                foreach (var item in dbItems)
-                {
-                    var orderItem = new order_items
+                    var newOrder = new order
                     {
-                        order_id = newOrder.id,
-                        product_id = item.product_id,
-                        quantity = item.quantity,
-                        price = item.sale_price,
+                        user_id = userId,
+                        full_name = model.FullName ?? "",
+                        phone_number = model.PhoneNumber ?? "",
+                        shipping_address = model.Address ?? "Nhận tại quầy",
+                        note = model.Note ?? "",
+                        shipping_method = model.ShippingMethod,
+                        payment_method = model.PaymentMethod,
+
+                        subtotal_money = subTotal,
+                        shipping_fee = shippingFee,
+                        discount_amount = discountAmount,
+                        total_money = totalMoney,
+
+                        status = "PENDING_CONFIRMATION",
+                        payment_status = "UNPAID",
+                        order_date = DateTime.Now,
                         created_at = DateTime.Now,
                         updated_at = DateTime.Now,
-                        created_by = "",
+                        tracking_number = "",
+                        created_by = Session["UserName"] as string ?? "Customer",
                         updated_by = ""
                     };
-                    db.order_items.Add(orderItem);
+
+                    db.orders.Add(newOrder);
+                    db.SaveChanges(); 
+
+                    foreach (var item in dbItems)
+                    {
+                        var orderItem = new order_items
+                        {
+                            order_id = newOrder.id,
+                            product_id = item.product_id,
+                            quantity = item.quantity,
+                            price = item.sale_price,
+                            created_at = DateTime.Now,
+                            updated_at = DateTime.Now,
+                            created_by = "",
+                            updated_by = ""
+                        };
+                        db.order_items.Add(orderItem);
+                    }
+                    db.SaveChanges();
+
+                    foreach (var item in dbItems)
+                    {
+                        db.cart_items.Remove(item);
+                    }
+
+                    cart.total_items = 0;
+                    cart.total_price = 0;
+                    cart.updated_at = DateTime.Now;
+
+                    Session["DiscountAmount"] = null;
+                    Session["DiscountCode"] = null;
+
+                    db.SaveChanges();
+
+                    scope.Complete();
                 }
-                db.SaveChanges();
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Lỗi xử lý đơn hàng: " + ex.Message);
+                    return View("Index", model);
+                }
+            } 
 
-                foreach (var item in dbItems) { db.cart_items.Remove(item); }
-                cart.total_items = 0;
-                cart.total_price = 0;
-                cart.updated_at = DateTime.Now;
-                db.SaveChanges();
 
-                return RedirectToAction("Success", new { id = newOrder.id });
-            }
-            catch (System.Data.Entity.Validation.DbEntityValidationException ex)
+
+            var createdOrder = db.orders.Find(db.orders.Local.Last().id);
+
+            if (model.PaymentMethod == "VNPAY")
             {
-                var errorMessages = ex.EntityValidationErrors
-                        .SelectMany(x => x.ValidationErrors)
-                        .Select(x => x.ErrorMessage);
-                var fullErrorMessage = string.Join("; ", errorMessages);
-                var exceptionMessage = string.Concat(ex.Message, " Lỗi chi tiết: ", fullErrorMessage);
-                throw new Exception(exceptionMessage);
+                return RedirectToAction("VnPayPayment", "Payment", new { orderId = createdOrder.id });
+            }
+            else
+            {
+                try
+                {
+                    var userEmail = db.users.Find(userId)?.email;
+                    if (!string.IsNullOrEmpty(userEmail))
+                    {
+                        var orderForMail = db.orders
+                            .Include(o => o.order_items.Select(oi => oi.product))
+                            .FirstOrDefault(o => o.id == createdOrder.id);
+
+                        if (orderForMail != null)
+                        {
+                            string body = EmailContentBuilder.BuildOrderSuccessEmail(orderForMail);
+                            string subject = $"Xác nhận đơn hàng #{createdOrder.id} - Nhà Thuốc An Tâm";
+
+                            Task.Run(() =>
+                            {
+                                var emailService = new EmailService();
+                                emailService.SendEmail(userEmail, subject, body);
+                            });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Lỗi gửi mail: " + ex.Message);
+                }
+
+                return RedirectToAction("Success", new { id = createdOrder.id });
             }
         }
 
-        // Trang thông báo đặt hàng thành công
-        // GET: /Checkout/Success/5
+
         public ActionResult Success(int id)
         {
-            // 1. Tìm đơn hàng theo ID
             var order = db.orders.Find(id);
 
             if (order == null)
@@ -148,8 +223,6 @@ namespace congnghephanmem.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // 2. Bảo mật: Kiểm tra xem đơn hàng có đúng của người dùng đang đăng nhập không
-            // (Tránh trường hợp user A gõ ID đơn hàng của user B để xem)
             if (Session["UserID"] != null)
             {
                 int currentUserId = (int)Session["UserID"];

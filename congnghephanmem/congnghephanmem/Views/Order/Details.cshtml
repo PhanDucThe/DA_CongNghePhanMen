@@ -1,0 +1,339 @@
+﻿@model congnghephanmem.Models.order
+
+@{
+    ViewBag.Title = "Chi tiết đơn hàng #" + Model.id;
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    decimal vat = Model.subtotal_money * 0.08m;
+    decimal total = Model.total_money.Value;
+}
+
+<style>
+
+    .bg-surface {
+        background: white;
+    }
+
+    .shadow-soft {
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+
+    .text-primary-dark {
+        color: #0fb398;
+    }
+
+
+    .status-badge-lg {
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-pending {
+        background: #FFF4E5;
+        color: #FF9F43;
+        border: 1px solid #FFE0B2;
+    }
+
+    .status-processing {
+        background: #E3F5FF;
+        color: #0099FF;
+        border: 1px solid #B3E5FC;
+    }
+
+    .status-shipped {
+        background: #E0F2F1;
+        color: #009688;
+        border: 1px solid #B2DFDB;
+    }
+
+    .status-completed {
+        background: #E8F5E9;
+        color: #4CAF50;
+        border: 1px solid #C8E6C9;
+    }
+
+    .status-cancelled {
+        background: #FFEBEE;
+        color: #F44336;
+        border: 1px solid #FFCDD2;
+    }
+
+    /* Timeline */
+    .timeline-item {
+        position: relative;
+        padding-left: 30px;
+        margin-bottom: 20px;
+    }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 25px;
+            bottom: -25px;
+            width: 2px;
+            background: #eee;
+        }
+
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+    .timeline-icon {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #eee;
+        background: #ccc;
+    }
+
+    .timeline-item.active .timeline-icon {
+        background: var(--admin-primary);
+        box-shadow: 0 0 0 2px rgba(0, 192, 146, 0.2);
+    }
+
+    /* Product List */
+    .prod-img-box {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        border: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+    }
+
+    .prod-img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+</style>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+        <div class="d-flex align-items-center gap-3 mb-1">
+            <h3 class="fw-bold m-0 text-dark">Đơn hàng #ORD-@Model.id</h3>
+
+            @if (Model.status == "PENDING_CONFIRMATION")
+            {
+                <span class="status-badge-lg status-pending"><span class="spinner-grow spinner-grow-sm"></span> Chờ xác nhận</span>
+            }
+            else if (Model.status == "SHIPPED")
+            {
+                <span class="status-badge-lg status-shipped"><i class="material-symbols-outlined fs-6">local_shipping</i> Đang giao</span>
+            }
+            else if (Model.status == "DELIVERED")
+            {
+                <span class="status-badge-lg status-completed"><i class="material-symbols-outlined fs-6">check_circle</i> Hoàn thành</span>
+            }
+            else
+            {
+                <span class="status-badge-lg status-processing">@Model.status</span>
+            }
+        </div>
+        <div class="text-muted small">
+            <i class="material-symbols-outlined align-middle fs-6">calendar_today</i> Ngày đặt: @Model.created_at.Value.ToString("dd/MM/yyyy - HH:mm")
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button class="btn btn-white border fw-bold text-secondary shadow-sm"><i class="material-symbols-outlined align-middle fs-6">print</i> In hóa đơn</button>
+        @if (Model.status != "CANCELLED" && Model.status != "DELIVERED")
+        {
+            <button class="btn btn-danger fw-bold shadow-sm bg-opacity-10 text-danger border-danger border-opacity-25" onclick="if(confirm('Hủy đơn này?')) location.href='@Url.Action("UpdateStatus", new {id=Model.id, status="CANCELLED"})'">
+                <i class="material-symbols-outlined align-middle fs-6">block</i> Hủy đơn
+            </button>
+        }
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-soft h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h6 class="fw-bold d-flex align-items-center gap-2"><i class="material-symbols-outlined text-primary-dark">person</i> Khách hàng</h6>
+                            <a href="#" class="small fw-bold text-primary-dark text-decoration-none">Xem hồ sơ</a>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center fw-bold text-secondary" style="width: 48px; height: 48px;">
+                                @Model.full_name.Substring(0, 1).ToUpper()
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">@Model.full_name</div>
+                                <div class="small text-muted"><i class="material-symbols-outlined align-middle fs-6" style="font-size: 14px;">call</i> @Model.phone_number</div>
+                            </div>
+                        </div>
+                        <hr class="opacity-25 my-3">
+                        <div class="row text-center small">
+                            <div class="col-6 border-end">
+                                <div class="text-muted">Lịch sử mua</div>
+                                <div class="fw-bold">12 đơn</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted">Nhóm KH</div>
+                                <div class="fw-bold text-primary-dark">Thân thiết</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-soft h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h6 class="fw-bold d-flex align-items-center gap-2"><i class="material-symbols-outlined text-primary-dark">local_shipping</i> Giao hàng</h6>
+                        </div>
+                        <div class="d-flex gap-2 mb-3">
+                            <i class="material-symbols-outlined text-muted fs-6 mt-1">location_on</i>
+                            <span class="text-dark small fw-bold">@Model.shipping_address</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.note))
+                        {
+                            <div class="d-flex gap-2 p-2 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded small">
+                                <i class="material-symbols-outlined text-warning fs-6">description</i>
+                                <span class="text-dark fst-italic">"@Model.note"</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-soft overflow-hidden">
+            <div class="card-header bg-light border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold m-0">Danh sách sản phẩm</h6>
+                <span class="badge bg-primary bg-opacity-10 text-primary-dark">@Model.order_items.Sum(x => x.quantity) sản phẩm</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-4">Sản phẩm</th>
+                            <th class="text-end">Đơn giá</th>
+                            <th class="text-center">SL</th>
+                            <th class="text-end pe-4">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.order_items)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="prod-img-box">
+                                            <img src="@item.product.thumbnail_url" class="prod-img" alt="Product">
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@item.product.name</div>
+                                            <div class="small text-muted">SKU: @item.product.sku</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-end text-muted">@string.Format("{0:0,0}đ", item.price)</td>
+                                <td class="text-center"><span class="badge bg-light text-dark border">@item.quantity</span></td>
+                                <td class="text-end pe-4 fw-bold">@string.Format("{0:0,0}đ", item.price * item.quantity)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="card border-0 shadow-soft mb-4">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-4">Trạng thái đơn hàng</h6>
+
+                <div class="mb-4 ps-2">
+                    <div class="timeline-item active">
+                        <div class="timeline-icon"></div>
+                        <div class="small fw-bold text-success">Đặt hàng thành công</div>
+                        <div class="small text-muted" style="font-size: 11px;">@Model.created_at.Value.ToString("HH:mm - dd/MM")</div>
+                    </div>
+                    <div class="timeline-item @(Model.status != "PENDING_CONFIRMATION" ? "active" : "")">
+                        <div class="timeline-icon"></div>
+                        <div class="small fw-bold">Đã xác nhận</div>
+                    </div>
+                </div>
+
+                <label class="small fw-bold text-muted text-uppercase mb-2">Cập nhật trạng thái</label>
+                <form action="@Url.Action("UpdateStatus", "Order")" method="post">
+                    <input type="hidden" name="id" value="@Model.id" />
+                    <div class="input-group">
+                        <select name="status" class="form-select text-sm fw-bold">
+                            <option value="PENDING_CONFIRMATION" @(Model.status == "PENDING_CONFIRMATION" ? "selected" : "")>Chờ xác nhận</option>
+                            <option value="PROCESSING" @(Model.status == "PROCESSING" ? "selected" : "")>Đang xử lý</option>
+                            <option value="SHIPPED" @(Model.status == "SHIPPED" ? "selected" : "")>Đang giao hàng</option>
+                            <option value="DELIVERED" @(Model.status == "DELIVERED" ? "selected" : "")>Đã hoàn thành</option>
+                            <option value="CANCELLED" @(Model.status == "CANCELLED" ? "selected" : "")>Đã hủy</option>
+                        </select>
+                        <button type="submit" class="btn btn-dark"><i class="material-symbols-outlined align-middle">save</i></button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light p-3 small">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Thanh toán</span>
+                    <span class="fw-bold bg-primary bg-opacity-10 text-primary-dark px-2 rounded">@Model.payment_method</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Trạng thái TT</span>
+                    <span class="fw-bold text-warning">@Model.payment_status</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-soft">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3">Tổng quan chi phí</h6>
+                <div class="d-flex justify-content-between mb-2 small text-muted">
+                    <span>Tạm tính</span>
+                    <span class="text-dark fw-bold">@string.Format("{0:0,0}đ", Model.subtotal_money)</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 small text-muted">
+                    <span>Thuế (VAT 8%)</span>
+                    <span class="text-dark fw-bold">@string.Format("{0:0,0}đ", vat)</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 small text-muted">
+                    <span>Phí vận chuyển</span>
+                    <span class="text-dark fw-bold">@string.Format("{0:0,0}đ", Model.shipping_fee)</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3 small text-muted">
+                    <span>Giảm giá</span>
+                    <span class="text-success fw-bold">-@string.Format("{0:0,0}đ", Model.discount_amount)</span>
+                </div>
+                <hr class="border-dashed">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-6">Tổng cộng</span>
+                    <span class="fw-bold fs-4 text-primary-dark">@string.Format("{0:0,0}đ", total)</span>
+                </div>
+
+                @if (Model.status == "PENDING_CONFIRMATION")
+                {
+                    <button class="btn btn-success w-100 fw-bold mt-4 py-2" style="background-color: var(--admin-primary); border:none;" onclick="location.href='@Url.Action("UpdateStatus", new {id=Model.id, status="PROCESSING"})'">
+                        <i class="material-symbols-outlined align-middle fs-6">check_circle</i> Xác nhận đơn hàng
+                    </button>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>

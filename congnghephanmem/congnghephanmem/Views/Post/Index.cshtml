@@ -55,7 +55,12 @@
                         </td>
                         <td>@item.created_at.Value.ToString("dd/MM/yyyy")</td>
                         <td class="text-end">
-                            <button class="btn btn-light btn-sm text-danger" onclick="if(confirm('Xóa bài viết này?')) location.href='@Url.Action("Delete", new { id = item.id })'">
+                            <a href="@Url.Action("Edit", new { id = item.id })" class="btn btn-light btn-sm text-primary me-2" title="Chỉnh sửa">
+                                <span class="material-symbols-outlined fs-6">edit</span>
+                            </a>
+
+                            <button class="btn btn-light btn-sm text-danger" title="Xóa"
+                                    onclick="if(confirm('Bạn có chắc muốn xóa bài viết này không?')) location.href='@Url.Action("Delete", new { id = item.id })'">
                                 <span class="material-symbols-outlined fs-6">delete</span>
                             </button>
                         </td>

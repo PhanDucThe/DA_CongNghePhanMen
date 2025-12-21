@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Text;
 using System.Web;
 using System.Web.Mvc;
 using congnghephanmem.Models;
+using congnghephanmem.ViewModels; 
 
 namespace congnghephanmem.Controllers
 {
@@ -14,66 +14,117 @@ namespace congnghephanmem.Controllers
     {
         private db_cnpmEntities db = new db_cnpmEntities();
 
-        // GET: Admin/Post
+
         public ActionResult Index()
         {
-            // Lấy danh sách bài viết, sắp xếp mới nhất
+
+            if (Session["UserID"] == null) return RedirectToAction("Login", "Account"); 
+
             var posts = db.posts.OrderByDescending(p => p.created_at).ToList();
             return View(posts);
         }
 
-        // GET: Admin/Post/Create
         public ActionResult Create()
         {
-            // Load danh sách chuyên mục vào Dropdown
+            if (Session["UserID"] == null) return RedirectToAction("Login", "Account");
+
             ViewBag.Categories = new SelectList(db.post_categories.ToList(), "id", "name");
             return View();
         }
 
-        // POST: Admin/Post/Create
         [HttpPost]
-        [ValidateInput(false)] // Tắt kiểm tra bảo mật mặc định để nhận HTML từ CKEditor
+        [ValidateInput(false)]
         public ActionResult Create(PostViewModel model)
         {
             if (ModelState.IsValid)
             {
-                string thumbnailUrl = "/Content/images/no-image.png"; // Ảnh mặc định
+                string thumbnailUrl = "/Content/images/no-image.png";
 
-                // 1. Xử lý Upload ảnh
                 if (model.ThumbnailImage != null && model.ThumbnailImage.ContentLength > 0)
                 {
-                    string fileName = Path.GetFileNameWithoutExtension(model.ThumbnailImage.FileName);
-                    string extension = Path.GetExtension(model.ThumbnailImage.FileName);
-                    fileName = fileName + "_" + DateTime.Now.ToString("yyyyMMddhhmmss") + extension;
-
-                    // Lưu vào thư mục /Content/images/posts/
-                    string path = Path.Combine(Server.MapPath("~/Content/images/posts/"), fileName);
-
-                    // Tạo thư mục nếu chưa có
-                    Directory.CreateDirectory(Server.MapPath("~/Content/images/posts/"));
-
-                    model.ThumbnailImage.SaveAs(path);
-                    thumbnailUrl = "/Content/images/posts/" + fileName;
+                    thumbnailUrl = UploadImage(model.ThumbnailImage);
                 }
 
-                // 2. Tạo đối tượng Post
+
                 var newPost = new post
                 {
                     title = model.Title,
-                    slug = GenerateSlug(model.Title), // Hàm tạo slug ở dưới
+                    slug = GenerateSlug(model.Title),
                     excerpt = model.Excerpt,
                     content = model.Content,
                     thumbnail_url = thumbnailUrl,
                     category_id = model.CategoryId,
-                    author_id = 1, // Tạm thời set cứng ID admin, sau này lấy Session["UserID"]
-                    status = model.Status, // PUBLISHED hoặc DRAFT
-                    published_at = model.Status == "PUBLISHED" ? DateTime.Now : (DateTime?)null,
+                    author_id = (int)Session["UserID"], 
+                    status = model.Status,
                     created_at = DateTime.Now,
                     updated_at = DateTime.Now,
                     view_count = 0
                 };
 
+                if (model.Status == "PUBLISHED")
+                {
+                    newPost.published_at = DateTime.Now;
+                }
+
                 db.posts.Add(newPost);
+                db.SaveChanges();
+                return RedirectToAction("Index");
+            }
+
+
+            ViewBag.Categories = new SelectList(db.post_categories.ToList(), "id", "name", model.CategoryId);
+            return View(model);
+        }
+
+        public ActionResult Edit(int id)
+        {
+            if (Session["UserID"] == null) return RedirectToAction("Login", "Account");
+
+            var post = db.posts.Find(id);
+            if (post == null) return HttpNotFound();
+
+            var model = new PostViewModel
+            {
+                Id = post.id,
+                Title = post.title,
+                Excerpt = post.excerpt,
+                Content = post.content,
+                CurrentThumbnailUrl = post.thumbnail_url,
+                CategoryId = post.category_id ?? 0,
+                Status = post.status
+            };
+
+            ViewBag.Categories = new SelectList(db.post_categories.ToList(), "id", "name", post.category_id);
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateInput(false)]
+        public ActionResult Edit(PostViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var post = db.posts.Find(model.Id);
+                if (post == null) return HttpNotFound();
+
+                post.title = model.Title;
+                post.excerpt = model.Excerpt;
+                post.content = model.Content;
+                post.category_id = model.CategoryId;
+                post.status = model.Status;
+                post.updated_at = DateTime.Now;
+
+                if (model.Status == "PUBLISHED" && post.published_at == null)
+                {
+                    post.published_at = DateTime.Now;
+                }
+
+
+                if (model.ThumbnailImage != null && model.ThumbnailImage.ContentLength > 0)
+                {
+                    post.thumbnail_url = UploadImage(model.ThumbnailImage);
+                }
+
                 db.SaveChanges();
                 return RedirectToAction("Index");
             }
@@ -82,9 +133,11 @@ namespace congnghephanmem.Controllers
             return View(model);
         }
 
-        // Xóa bài viết
+
         public ActionResult Delete(int id)
         {
+            if (Session["UserID"] == null) return RedirectToAction("Login", "Account");
+
             var post = db.posts.Find(id);
             if (post != null)
             {
@@ -94,11 +147,31 @@ namespace congnghephanmem.Controllers
             return RedirectToAction("Index");
         }
 
-        // --- HELPER: Hàm tạo Slug (Tiếng Việt có dấu -> Không dấu) ---
-        public string GenerateSlug(string phrase)
+        private string UploadImage(HttpPostedFileBase file)
         {
+            string fileName = Path.GetFileNameWithoutExtension(file.FileName);
+            string extension = Path.GetExtension(file.FileName);
+            fileName = fileName + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + extension;
+
+            string relativePath = "~/Content/images/posts/";
+            string absolutePath = Server.MapPath(relativePath);
+
+            if (!Directory.Exists(absolutePath))
+            {
+                Directory.CreateDirectory(absolutePath);
+            }
+
+            string savePath = Path.Combine(absolutePath, fileName);
+            file.SaveAs(savePath);
+
+            return "/Content/images/posts/" + fileName;
+        }
+
+        private string GenerateSlug(string phrase)
+        {
+            if (string.IsNullOrEmpty(phrase)) return "";
+
             string str = phrase.ToLower();
-            // Xóa dấu tiếng Việt
             str = Regex.Replace(str, @"[áàạảãâấầậẩẫăắằặẳẵ]", "a");
             str = Regex.Replace(str, @"[éèẹẻẽêếềệểễ]", "e");
             str = Regex.Replace(str, @"[óòọỏõôốồộổỗơớờợởỡ]", "o");
@@ -107,10 +180,10 @@ namespace congnghephanmem.Controllers
             str = Regex.Replace(str, @"[đ]", "d");
             str = Regex.Replace(str, @"[ýỳỵỷỹ]", "y");
 
-            // Xóa ký tự đặc biệt
             str = Regex.Replace(str, @"[^a-z0-9\s-]", "");
-            // Chuyển khoảng trắng thành gạch ngang
             str = Regex.Replace(str, @"\s+", "-").Trim();
+
+            str = Regex.Replace(str, @"-+", "-");
 
             return str;
         }

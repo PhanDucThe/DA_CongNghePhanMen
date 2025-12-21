@@ -1,9 +1,8 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Web;
-using System.Web.Mvc; // Để dùng [AllowHtml]
+using System.Web.Mvc;
 
-namespace congnghephanmem.Models
+namespace congnghephanmem.ViewModels
 {
     public class PostViewModel
     {
@@ -13,20 +12,22 @@ namespace congnghephanmem.Models
         [Display(Name = "Tiêu đề")]
         public string Title { get; set; }
 
-        [Display(Name = "Tóm tắt ngắn")]
+        [Display(Name = "Mô tả ngắn")]
         public string Excerpt { get; set; }
 
-        [AllowHtml] // Cho phép chứa thẻ HTML từ CKEditor
-        [Display(Name = "Nội dung bài viết")]
+        [AllowHtml] // Cho phép chứa mã HTML từ CKEditor
+        [Display(Name = "Nội dung")]
         public string Content { get; set; }
 
         [Display(Name = "Ảnh đại diện")]
-        public HttpPostedFileBase ThumbnailImage { get; set; } // Hứng file upload
-        public string ExistingThumbnailUrl { get; set; } // Lưu đường dẫn cũ nếu đang sửa
+        public HttpPostedFileBase ThumbnailImage { get; set; }
+        public string CurrentThumbnailUrl { get; set; } // Dùng khi Edit để hiển thị ảnh cũ
 
         [Required(ErrorMessage = "Vui lòng chọn chuyên mục")]
+        [Display(Name = "Chuyên mục")]
         public int CategoryId { get; set; }
 
-        public string Status { get; set; } // 'PUBLISHED', 'DRAFT'
+        [Display(Name = "Trạng thái")]
+        public string Status { get; set; } // "PUBLISHED" hoặc "DRAFT"
     }
 }

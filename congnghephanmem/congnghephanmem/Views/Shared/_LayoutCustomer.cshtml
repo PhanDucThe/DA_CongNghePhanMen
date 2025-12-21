@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewBag.Title - Nhà Thuốc Online</title>
+    <title>@ViewBag.Title - Nhà Thuốc An Tâm</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -12,7 +12,7 @@
 
     <style>
         :root {
-            --primary-color: #13ecc8; /* Màu xanh Mint chủ đạo */
+            --primary-color: #13ecc8;
             --primary-bg-light: #f0fdfa;
             --text-dark: #10221f;
         }
@@ -23,7 +23,7 @@
             color: #333;
         }
 
-        /* --- CUSTOM COLORS & BUTTONS --- */
+
         .text-primary-custom {
             color: #00bfa5 !important;
         }
@@ -68,7 +68,7 @@
                 background: #fff;
             }
 
-        /* --- HEADER ELEMENTS --- */
+
         .search-container {
             background-color: #f3f4f6;
             border-radius: 8px;
@@ -107,7 +107,7 @@
                 font-weight: 700;
             }
 
-        /* --- USER AVATAR --- */
+
         .user-avatar {
             width: 40px;
             height: 40px;
@@ -119,7 +119,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        /* --- PRODUCT CARD --- */
+
         .card-product {
             border: none;
             border-radius: 12px;
@@ -131,10 +131,6 @@
                 transform: translateY(-5px);
                 box-shadow: 0 10px 20px rgba(0,0,0,0.05);
             }
-
-        /* ========================================= */
-        /* --- CHATBOX CSS --- */
-        /* ========================================= */
         .chat-btn-toggle {
             position: fixed;
             bottom: 30px;
@@ -240,6 +236,81 @@
             font-weight: bold;
             cursor: pointer;
         }
+
+        /* Custom Dropdown Styling */
+.user-menu-dropdown {
+    min-width: 260px; /* Rộng hơn chút để đẹp hơn */
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 8px;
+    animation: fadeInDropdown 0.2s ease-out;
+}
+
+/* Header chứa thông tin user */
+.dropdown-user-info {
+    padding: 12px 16px;
+    background-color: var(--primary-bg-light); /* Màu nền nhạt */
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dropdown-user-info .info-text h6 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.dropdown-user-info .info-text small {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+    /* Style cho từng item */
+    .custom-dropdown-item {
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: #4b5563;
+        font-weight: 500;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 12px; 
+        transition: all 0.2s;
+    }
+
+    .custom-dropdown-item .material-symbols-outlined {
+        font-size: 20px;
+        color: #9ca3af; 
+        transition: color 0.2s;
+    }
+
+
+    .custom-dropdown-item:hover {
+        background-color: rgba(19, 236, 200, 0.1);
+        color: var(--primary-color); 
+    }
+
+    .custom-dropdown-item:hover .material-symbols-outlined {
+        color: var(--primary-color);
+    }
+
+    .custom-dropdown-item.text-danger:hover {
+        background-color: #fee2e2;
+        color: #dc2626 !important;
+    }
+    .custom-dropdown-item.text-danger:hover .material-symbols-outlined {
+        color: #dc2626;
+    }
+
+    @@keyframes fadeInDropdown {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
     </style>
 </head>
 <body>
@@ -251,26 +322,56 @@
                 <div class="d-flex align-items-center gap-4">
                     <a href="@Url.Action("Index", "Home")" class="d-flex align-items-center text-decoration-none text-dark gap-2">
                         <span class="material-symbols-outlined fs-2" style="color: var(--primary-color)">spark</span>
-                        <h5 class="m-0 fw-bold">Nhà Thuốc Online</h5>
+                        <h5 class="m-0 fw-bold">Nhà Thuốc An Tâm</h5>
                     </a>
 
                     <form action="@Url.Action("Index", "Home")" method="get" class="d-none d-md-flex search-container align-items-center" style="width: 300px;">
                         <button type="submit" class="border-0 bg-transparent p-0 d-flex"><span class="material-symbols-outlined text-muted">search</span></button>
-                        <input type="text" name="keyword" class="form-control search-input" placeholder="Tìm kiếm sản phẩm...">
+
+                        <input type="text" name="keyword"
+                               value="@ViewBag.CurrentKeyword"
+                               class="form-control search-input"
+                               placeholder="Tìm kiếm sản phẩm...">
                     </form>
+
                 </div>
 
                 <div class="d-none d-lg-flex align-items-center gap-4">
-                    <a href="@Url.Action("Index", "Home")" class="nav-link active">Trang chủ</a>
-                    <a href="@Url.Action("Index", "Product")" class="nav-link">Thuốc</a>
-                    <a href="#" class="nav-link">Vitamin & Khoáng Chất</a>
-                    <a href="#" class="nav-link">Chăm sóc cá nhân</a>
+                    @{
+                        string currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+                        string currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+                        string currentId = ViewContext.RouteData.Values["id"]?.ToString();
+                    }
+
+                    <a href="@Url.Action("Index", "Home")"
+                       class="nav-link @(currentController == "Home" && currentAction == "Index" ? "active" : "")">
+                        Trang chủ
+                    </a>
+
+                    <a href="@Url.Action("Index", "Product")"
+                       class="nav-link @(currentController == "Product" && currentAction == "Index" ? "active" : "")">
+                        Thuốc
+                    </a>
+
+                    <a href="@Url.Action("Category", "Product", new { id = 5 })"
+                       class="nav-link @(currentController == "Product" && currentAction == "Category" && currentId == "5" ? "active" : "")">
+                        Vitamin & Khoáng Chất
+                    </a>
+
+                    <a href="@Url.Action("Category", "Product", new { id = 3 })"
+                       class="nav-link @(currentController == "Product" && currentAction == "Category" && currentId == "3" ? "active" : "")">
+                        Chăm sóc cá nhân
+                    </a>
+
+                    <a href="@Url.Action("Index", "Blog")"
+                       class="nav-link @(currentController == "Blog" ? "active" : "")">
+                        <i class="material-symbols-outlined align-middle fs-6 text-success">health_and_safety</i> Góc sức khỏe
+                    </a>
                 </div>
 
                 <div class="d-flex align-items-center gap-3">
                     <a href="@Url.Action("Index", "Cart")" class="icon-btn position-relative text-decoration-none">
                         <span class="material-symbols-outlined">shopping_cart</span>
-
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
                             @Html.Action("GetCartCount", "Cart")
                         </span>
@@ -282,13 +383,64 @@
                         if (string.IsNullOrEmpty(avatarUrl)) { avatarUrl = "https://i.pravatar.cc/150"; }
 
                         <div class="dropdown">
-                            <div class="user-avatar" data-bs-toggle="dropdown" aria-expanded="false" style="background-image: url('@avatarUrl');"></div>
-                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2">
-                                <li><h6 class="dropdown-header">Xin chào, @Session["UserName"]</h6></li>
-                                <li><a class="dropdown-item" href="/Account/Profile">Tài khoản của tôi</a></li>
-                                <li><a class="dropdown-item" href="/Order/MyOrders">Đơn hàng</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="@Url.Action("Logout", "Account")">Đăng xuất</a></li>
+                            <div class="user-avatar"
+                                 data-bs-toggle="dropdown"
+                                 aria-expanded="false"
+                                 style="background-image: url('@avatarUrl'); border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <span class="position-absolute bottom-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle" style="width:10px; height:10px;"></span>
+                            </div>
+
+                            <ul class="dropdown-menu dropdown-menu-end user-menu-dropdown mt-3">
+
+                                <li>
+                                    <div class="dropdown-user-info">
+                                        <div class="user-avatar" style="width: 40px; height: 40px; background-image: url('@avatarUrl');"></div>
+                                        <div class="info-text">
+                                            <h6 class="text-truncate" style="max-width: 160px;">@Session["UserName"]</h6>
+                                            <small>Thành viên thân thiết</small>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item custom-dropdown-item" href="@Url.Action("Profile", "Account")">
+                                        <span class="material-symbols-outlined">person</span>
+                                        Tài khoản của tôi
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item custom-dropdown-item" href="@Url.Action("History", "Order")">
+                                        <span class="material-symbols-outlined">receipt_long</span>
+                                        Đơn mua
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item custom-dropdown-item" href="@Url.Action("Index", "Address")">
+                                        <span class="material-symbols-outlined">location_on</span>
+                                        Sổ địa chỉ
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item custom-dropdown-item" href="@Url.Action("Index", "Prescription")">
+                                        <span class="material-symbols-outlined">medication</span>
+                                        Đơn thuốc
+                                    </a>
+                                </li>
+
+                                <li><hr class="dropdown-divider my-2 opacity-50"></li>
+
+                                <li>
+                                    <a class="dropdown-item custom-dropdown-item" href="@Url.Action("ChangePassword", "Account")">
+                                        <span class="material-symbols-outlined">lock_reset</span>
+                                        Đổi mật khẩu
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item custom-dropdown-item text-danger" href="@Url.Action("Logout", "Account")">
+                                        <span class="material-symbols-outlined">logout</span>
+                                        Đăng xuất
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     }
@@ -345,10 +497,8 @@
         }
 
         $(function () {
-            // Kết nối Hub
             var chat = $.connection.chatHub;
 
-            // Nhận tin nhắn
             chat.client.addNewMessageToPage = function (name, message, type) {
                 var cssClass = type === "user" ? "msg-user" : "msg-bot";
                 var html = '<div class="msg ' + cssClass + '">' + message + '</div>';
@@ -357,8 +507,6 @@
                 var chatHistory = document.getElementById("chatHistory");
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             };
-
-            // Khởi động kết nối
             $.connection.hub.start().done(function () {
                 $('#sendButton').click(function () {
                     var msg = $('#messageInput').val();

@@ -28,6 +28,17 @@
         margin: 0;
     }
 
+    .rating-input input:checked ~ label,
+    .rating-input label:hover,
+    .rating-input label:hover ~ label {
+        color: #FFC107 !important; /* Màu vàng */
+        font-variation-settings: 'FILL' 1; /* Icon filled */
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
     .quantity-input {
         max-width: 50px;
         text-align: center;
@@ -223,7 +234,7 @@
                             @foreach (var item in ingredients)
                             {
                                 <tr><td>@item["name"]</td><td>@item["amount"] @item["unit"]</td></tr>
-}
+                            }
                         </tbody>
                     </table>
                 }
@@ -308,6 +319,65 @@
             </div>
         </div>
     </div>
+
+
+    <hr class="my-5 opacity-10">
+
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="bg-light p-4 rounded-3 border">
+                <h5 class="fw-bold mb-3">Gửi đánh giá của bạn</h5>
+
+                @if (Session["UserID"] != null)
+                {
+                    <form id="reviewForm">
+                        <input type="hidden" name="ProductId" value="@Model.id">
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Bạn cảm thấy thế nào?</label>
+                            <div class="rating-input d-flex flex-row-reverse justify-content-end gap-1">
+                                <input type="radio" id="star5" name="Rating" value="5" class="d-none"><label for="star5" class="material-symbols-outlined fs-3 cursor-pointer text-muted">star</label>
+                                <input type="radio" id="star4" name="Rating" value="4" class="d-none"><label for="star4" class="material-symbols-outlined fs-3 cursor-pointer text-muted">star</label>
+                                <input type="radio" id="star3" name="Rating" value="3" class="d-none"><label for="star3" class="material-symbols-outlined fs-3 cursor-pointer text-muted">star</label>
+                                <input type="radio" id="star2" name="Rating" value="2" class="d-none"><label for="star2" class="material-symbols-outlined fs-3 cursor-pointer text-muted">star</label>
+                                <input type="radio" id="star1" name="Rating" value="1" class="d-none"><label for="star1" class="material-symbols-outlined fs-3 cursor-pointer text-muted">star</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <textarea name="Content" class="form-control" rows="4" placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="material-symbols-outlined align-middle fs-6">add_photo_alternate</i> Thêm hình ảnh
+                                <input type="file" name="Images" multiple accept="image/*" class="d-none" id="reviewImages">
+                            </label>
+                            <div id="previewReviewImages" class="d-flex gap-2 mt-2 overflow-auto"></div>
+                        </div>
+
+                        <button type="button" onclick="submitReview()" class="btn btn-primary-custom w-100 fw-bold">Gửi đánh giá</button>
+                    </form>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <p class="text-muted small">Vui lòng đăng nhập để viết đánh giá.</p>
+                        <a href="/Account/Login?returnUrl=/Product/Detail/@Model.id" class="btn btn-outline-primary btn-sm rounded-pill px-4">Đăng nhập ngay</a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <h5 class="fw-bold mb-3">Khách hàng nhận xét</h5>
+            <div id="reviewListContainer">
+                <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+
+
     <div class="mt-5">
         <h3 class="fw-bold mb-4">Sản phẩm thường mua cùng</h3>
         <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4">
@@ -332,19 +402,61 @@
 
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    function changeImage(src, element) {
-        document.getElementById('mainImage').src = src;
-        var thumbnails = document.querySelectorAll('.thumbnail-img');
-        thumbnails.forEach(t => t.classList.remove('active'));
-        element.classList.add('active');
+    $(document).ready(function() {
+        loadReviews();
+        $('#reviewImages').change(function() {
+            $('#previewReviewImages').html('');
+            if (this.files) {
+                Array.from(this.files).forEach(file => {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#previewReviewImages').append(`<img src="${e.target.result}" style="width:50px; height:50px; object-fit:cover; border-radius:4px;">`);
+                    }
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+    });
+
+    function loadReviews() {
+        $.get('/Product/GetReviews?productId=@Model.id', function(data) {
+            $('#reviewListContainer').html(data);
+        });
     }
-    function increaseQty() {
-        var input = document.getElementById('qtyInput');
-        input.value = parseInt(input.value) + 1;
-    }
-    function decreaseQty() {
-        var input = document.getElementById('qtyInput');
-        if (parseInt(input.value) > 1) { input.value = parseInt(input.value) - 1; }
+
+    function submitReview() {
+        var formData = new FormData($('#reviewForm')[0]);
+
+        if(!$('input[name="Rating"]:checked').val()) {
+            alert('Vui lòng chọn số sao!');
+            return;
+        }
+        if(!$('textarea[name="Content"]').val()) {
+            alert('Vui lòng nhập nội dung!');
+            return;
+        }
+
+        $.ajax({
+            url: '/Product/SubmitReview',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                if(res.success) {
+                    alert(res.message);
+                    $('#reviewForm')[0].reset(); 
+                    $('#previewReviewImages').html(''); 
+                    loadReviews(); 
+                } else {
+                    alert(res.message);
+                }
+            },
+            error: function() {
+                alert('Có lỗi xảy ra, vui lòng thử lại.');
+            }
+        });
     }
 </script>

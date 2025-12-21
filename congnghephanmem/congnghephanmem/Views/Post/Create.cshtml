@@ -1,4 +1,4 @@
-﻿@model congnghephanmem.Models.PostViewModel
+﻿@model congnghephanmem.ViewModels.PostViewModel
 
 @{
     ViewBag.Title = "Viết bài mới";
@@ -8,92 +8,118 @@
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 
 <div class="row justify-content-center">
-    <div class="col-md-10">
-        <div class="chart-box">
-            <div class="d-flex align-items-center gap-2 mb-4">
-                <a href="@Url.Action("Index")" class="text-decoration-none text-muted">
-                    <span class="material-symbols-outlined">arrow_back</span>
+    <div class="col-xl-10 col-lg-12">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <a href="@Url.Action("Index")" class="btn btn-light border shadow-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" title="Quay lại">
+                    <span class="material-symbols-outlined text-muted">arrow_back</span>
                 </a>
-                <h4 class="fw-bold m-0">Soạn thảo bài viết</h4>
+                <div>
+                    <h4 class="fw-bold m-0 text-dark">Viết bài mới</h4>
+                    <p class="text-muted small m-0">Tạo nội dung mới cho Blog sức khỏe</p>
+                </div>
             </div>
+        </div>
 
-            @using (Html.BeginForm("Create", "Post", FormMethod.Post, new { enctype = "multipart/form-data" }))
-            {
-                @Html.AntiForgeryToken()
+        @using (Html.BeginForm("Create", "Post", FormMethod.Post, new { enctype = "multipart/form-data" }))
+        {
+            @Html.AntiForgeryToken()
 
-                <div class="row g-4">
-                    <div class="col-lg-8">
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger mb-4" })
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Tiêu đề bài viết</label>
-                            @Html.TextBoxFor(m => m.Title, new { @class = "form-control fw-bold fs-5", placeholder = "Nhập tiêu đề hấp dẫn..." })
-                            @Html.ValidationMessageFor(m => m.Title, "", new { @class = "text-danger small" })
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="fw-bold m-0 text-primary">Nội dung bài viết</h6>
                         </div>
+                        <div class="card-body p-4">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark">Tiêu đề bài viết <span class="text-danger">*</span></label>
+                                @Html.TextBoxFor(m => m.Title, new { @class = "form-control form-control-lg fw-bold", placeholder = "Nhập tiêu đề hấp dẫn..." })
+                                @Html.ValidationMessageFor(m => m.Title, "", new { @class = "text-danger small mt-1" })
+                            </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Tóm tắt ngắn (Excerpt)</label>
-                            @Html.TextAreaFor(m => m.Excerpt, new { @class = "form-control", rows = "3", placeholder = "Mô tả ngắn gọn nội dung..." })
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-muted">Nội dung chi tiết</label>
-                            @Html.TextAreaFor(m => m.Content, new { @id = "editorContent" })
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4">
-                        <div class="card border-0 bg-light p-3 rounded-3 mb-4">
-                            <h6 class="fw-bold mb-3">Đăng bài</h6>
-
-                            <div class="mb-3">
-                                <label class="form-label small text-muted fw-bold">Trạng thái</label>
-                                @Html.DropDownListFor(m => m.Status, new List<SelectListItem>
-                                {
-                                    new SelectListItem { Text = "Xuất bản ngay", Value = "PUBLISHED" },
-                                    new SelectListItem { Text = "Lưu bản nháp", Value = "DRAFT" }
-                                }, new { @class = "form-select" })
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark">Tóm tắt ngắn (Excerpt)</label>
+                                @Html.TextAreaFor(m => m.Excerpt, new { @class = "form-control", rows = "3", placeholder = "Mô tả ngắn gọn nội dung để hiển thị ngoài danh sách..." })
+                                <div class="form-text small">Đoạn này sẽ hiển thị dưới tiêu đề ở trang danh sách blog.</div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label small text-muted fw-bold">Chuyên mục</label>
-                                @Html.DropDownListFor(m => m.CategoryId, (SelectList)ViewBag.Categories, "--- Chọn chuyên mục ---", new { @class = "form-select" })
-                                @Html.ValidationMessageFor(m => m.CategoryId, "", new { @class = "text-danger small" })
+                                <label class="form-label fw-bold text-dark">Nội dung chi tiết</label>
+                                @Html.TextAreaFor(m => m.Content, new { @id = "editorContent" })
+                                @Html.ValidationMessageFor(m => m.Content, "", new { @class = "text-danger small mt-1" })
                             </div>
-
-                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mt-2" style="background-color: var(--admin-primary); border: none;">
-                                <span class="material-symbols-outlined align-middle fs-6">send</span> Đăng bài viết
-                            </button>
-                        </div>
-
-                        <div class="card border-0 bg-light p-3 rounded-3">
-                            <h6 class="fw-bold mb-3">Ảnh đại diện</h6>
-
-                            <div class="text-center mb-3">
-                                <img id="previewImg" src="https://via.placeholder.com/300x200?text=Upload+Image" class="img-fluid rounded border bg-white" style="max-height: 200px; object-fit: cover;" />
-                            </div>
-
-                            <input type="file" name="ThumbnailImage" id="ThumbnailImage" class="form-control" onchange="previewFile(this);" />
                         </div>
                     </div>
                 </div>
-            }
-        </div>
+
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 border-bottom pb-2">Đăng bài</h6>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">Trạng thái hiển thị</label>
+                                @Html.DropDownListFor(m => m.Status, new List<SelectListItem>
+                                {
+                                    new SelectListItem { Text = "🟢 Xuất bản ngay (Public)", Value = "PUBLISHED" },
+                                    new SelectListItem { Text = "⚪ Lưu bản nháp (Draft)", Value = "DRAFT" }
+                                }, new { @class = "form-select fw-bold" })
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small text-muted">Chuyên mục <span class="text-danger">*</span></label>
+                                @Html.DropDownListFor(m => m.CategoryId, (SelectList)ViewBag.Categories, "--- Chọn chuyên mục ---", new { @class = "form-select" })
+                                @Html.ValidationMessageFor(m => m.CategoryId, "", new { @class = "text-danger small mt-1" })
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                                <span class="material-symbols-outlined align-middle fs-6">send</span> Đăng bài viết
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-light w-100 fw-bold py-2 mt-2 text-muted">Hủy bỏ</a>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 border-bottom pb-2">Ảnh đại diện</h6>
+
+                            <div class="text-center mb-3 p-2 bg-light rounded border border-dashed">
+                                <img id="previewImg" src="/Content/images/no-image.png" class="img-fluid rounded shadow-sm" style="max-height: 200px; object-fit: cover; width: 100%;" />
+                            </div>
+
+                            <div class="d-grid">
+                                <label for="ThumbnailImage" class="btn btn-outline-primary btn-sm fw-bold">
+                                    <span class="material-symbols-outlined align-middle fs-6">upload</span> Chọn ảnh
+                                </label>
+                                <input type="file" name="ThumbnailImage" id="ThumbnailImage" class="d-none" accept="image/*" onchange="previewFile(this);" />
+                            </div>
+                            <div class="form-text small text-center mt-2">Dung lượng tối đa 5MB. Định dạng: JPG, PNG.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
 <script>
-    // 1. Kích hoạt CKEditor cho textarea có id="editorContent"
+
     CKEDITOR.replace('editorContent', {
-        height: 400
+        height: 450,
+        language: 'vi',
+        removeButtons: 'Save,NewPage,ExportPdf,Preview,Print',
     });
 
-    // 2. Hàm xem trước ảnh khi chọn file
+
     function previewFile(input) {
         var file = input.files[0];
         if (file) {
             var reader = new FileReader();
-            reader.onload = function () {
-                document.getElementById("previewImg").src = reader.result;
+            reader.onload = function (e) {
+                document.getElementById("previewImg").src = e.target.result;
             }
             reader.readAsDataURL(file);
         }

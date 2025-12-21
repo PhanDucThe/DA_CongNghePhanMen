@@ -196,26 +196,29 @@
 
                     <div class="d-flex justify-content-between mb-2 text-muted">
                         <span>Phí vận chuyển</span>
-                        @if (Model.ShippingFee == 0)
-                        {
-                            <span class="fw-bold text-success">Miễn phí</span>
-                        }
-                        else
-                        {
-                            <span class="fw-bold text-dark">@string.Format("{0:0,0}đ", Model.ShippingFee)</span>
-                        }
+                        <span class="fw-bold text-success">
+                            @(Model.ShippingFee == 0 ? "Miễn phí" : string.Format("{0:0,0}đ", Model.ShippingFee))
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2 text-primary-custom" id="discountRow" style="@(Model.DiscountAmount > 0 ? "" : "display:none;")">
+                        <span>Giảm giá</span>
+                        <span class="fw-bold" id="discountValue">-@string.Format("{0:0,0}đ", Model.DiscountAmount)</span>
                     </div>
 
                     <hr class="text-muted opacity-25">
 
-                    <div class="input-group mb-4">
-                        <input type="text" class="form-control" placeholder="Mã giảm giá">
-                        <button class="btn btn-mint text-white" type="button">Áp dụng</button>
+                    <div class="mb-4">
+                        <div class="input-group">
+                            <input type="text" id="couponCode" class="form-control" placeholder="Mã giảm giá" value="@Model.CouponCode">
+                            <button class="btn btn-mint text-white" type="button" id="btnApplyCoupon" onclick="applyCoupon()">Áp dụng</button>
+                        </div>
+                        <small id="couponMessage" class="mt-1 d-block fw-bold"></small>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <span class="fw-bold fs-5">Tổng cộng</span>
-                        <span class="fw-bold fs-4 text-primary-custom">@string.Format("{0:0,0}đ", Model.Total)</span>
+                        <span class="fw-bold fs-4 text-primary-custom" id="finalTotal">@string.Format("{0:0,0}đ", Model.Total)</span>
                     </div>
 
                     @if (Session["User"] != null)
@@ -225,7 +228,6 @@
                     else
                     {
                         <a href="/Account/Login?returnUrl=/Cart" class="btn btn-primary-custom w-100 py-3 rounded-3 fw-bold shadow-sm">ĐĂNG NHẬP ĐỂ THANH TOÁN</a>
-                        <div class="text-center mt-2 small text-muted">Bạn cần đăng nhập để tích điểm và thanh toán</div>
                     }
                 </div>
             </div>
@@ -265,10 +267,57 @@
 
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    // Hàm update số lượng cũ của bạn
     function updateQty(id, newQty) {
         if (newQty < 1) return;
-        // Gọi về Controller để update và load lại trang
         window.location.href = `/Cart/UpdateQuantity?productId=${id}&quantity=${newQty}`;
+    }
+
+    // --- HÀM MỚI: XỬ LÝ COUPON ---
+    function applyCoupon() {
+        var code = $('#couponCode').val();
+        var $btn = $('#btnApplyCoupon');
+        var $msg = $('#couponMessage');
+
+        if (!code) {
+            $msg.text("Vui lòng nhập mã giảm giá").css('color', 'red');
+            return;
+        }
+
+        // Hiệu ứng loading
+        $btn.prop('disabled', true).text('Đang xử lý...');
+        $msg.text('');
+
+        $.ajax({
+            url: '/Cart/ApplyCoupon',
+            type: 'POST',
+            data: { code: code },
+            success: function (res) {
+                $btn.prop('disabled', false).text('Áp dụng');
+
+                if (res.success) {
+                    // Thành công
+                    $msg.text(res.message).css('color', 'green');
+
+                    // Cập nhật giao diện
+                    $('#discountRow').show();
+                    $('#discountValue').text('-' + res.discountStr);
+                    $('#finalTotal').text(res.totalStr);
+                } else {
+                    // Thất bại
+                    $msg.text(res.message).css('color', 'red');
+
+                    // Reset về trạng thái chưa giảm
+                    $('#discountRow').hide();
+                    // Bạn có thể cần reload trang hoặc tính lại tổng tiền gốc ở đây nếu muốn chặt chẽ hơn
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false).text('Áp dụng');
+                $msg.text("Lỗi kết nối, vui lòng thử lại").css('color', 'red');
+            }
+        });
     }
 </script>

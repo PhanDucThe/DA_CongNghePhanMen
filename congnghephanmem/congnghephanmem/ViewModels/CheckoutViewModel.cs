@@ -29,5 +29,6 @@ namespace congnghephanmem.ViewModels
         public decimal SubTotal { get; set; }
         public decimal ShippingFee { get; set; }
         public decimal TotalAmount { get; set; }
+        public decimal DiscountAmount { get; set; } // Thêm trường này
     }
 }

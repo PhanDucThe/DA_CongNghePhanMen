@@ -1,0 +1,153 @@
+﻿@model congnghephanmem.ViewModels.EditProductViewModel
+
+@{
+    ViewBag.Title = "Cập Nhật Sản Phẩm";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <a href="@Url.Action("Index")" class="btn btn-light border shadow-sm">
+                <span class="material-symbols-outlined align-middle">arrow_back</span>
+            </a>
+            <h4 class="fw-bold m-0">Cập nhật sản phẩm: <span class="text-primary">@Model.Name</span></h4>
+        </div>
+
+        @using (Html.BeginForm("Edit", "AdminProduct", FormMethod.Post, new { enctype = "multipart/form-data" }))
+        {
+            @Html.AntiForgeryToken()
+
+            @Html.HiddenFor(m => m.Id)
+            @Html.HiddenFor(m => m.CurrentThumbnailUrl)
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="chart-box mb-4">
+                        <h6 class="fw-bold mb-3 text-primary">Thông tin chung</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Tên thuốc <span class="text-danger">*</span></label>
+                            @Html.TextBoxFor(m => m.Name, new { @class = "form-control fw-bold", placeholder = "Ví dụ: Panadol Extra..." })
+                            @Html.ValidationMessageFor(m => m.Name, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-muted">Mã SKU</label>
+                                @Html.TextBoxFor(m => m.Sku, new { @class = "form-control", placeholder = "PANA-001" })
+                                @Html.ValidationMessageFor(m => m.Sku, "", new { @class = "text-danger small" })
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-muted">Tồn kho</label>
+                                @Html.TextBoxFor(m => m.StockQuantity, new { @class = "form-control", type = "number" })
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-muted">Giá gốc</label>
+                                @Html.TextBoxFor(m => m.OriginalPrice, new { @class = "form-control", type = "number" })
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-muted">Giá bán</label>
+                                @Html.TextBoxFor(m => m.SalePrice, new { @class = "form-control text-success fw-bold", type = "number" })
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-box">
+                        <h6 class="fw-bold mb-3 text-primary">Nội dung chi tiết</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Mô tả ngắn</label>
+                            @Html.TextAreaFor(m => m.Description, new { @class = "form-control", rows = "3" })
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Bài viết chi tiết</label>
+                            @Html.TextAreaFor(m => m.Content, new { @id = "editorContent" })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+
+                    <div class="chart-box mb-4">
+                        <h6 class="fw-bold mb-3">Ảnh đại diện</h6>
+                        <div class="text-center mb-3">
+                            <img id="previewThumb"
+                                 src="@(string.IsNullOrEmpty(Model.CurrentThumbnailUrl) ? "https://via.placeholder.com/300x300?text=Upload" : Model.CurrentThumbnailUrl)"
+                                 class="img-fluid rounded border p-1" style="max-height: 200px;" />
+                        </div>
+                        <input type="file" name="ThumbnailFile" class="form-control" onchange="previewImage(this, 'previewThumb');" accept="image/*" />
+                        <small class="text-muted d-block mt-1">Bỏ qua nếu giữ ảnh cũ.</small>
+                    </div>
+
+                    <div class="chart-box mb-4">
+                        <h6 class="fw-bold mb-3">Album ảnh phụ</h6>
+                        <input type="file" name="GalleryFiles" class="form-control" multiple accept="image/*" />
+                        <small class="text-muted">Upload thêm ảnh (nếu cần).</small>
+                    </div>
+
+                    <div class="chart-box mb-4">
+                        <h6 class="fw-bold mb-3">Phân loại</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Danh mục</label>
+                            @Html.DropDownListFor(m => m.CategoryId, (SelectList)ViewBag.Categories, "--- Chọn danh mục ---", new { @class = "form-select" })
+                            @Html.ValidationMessageFor(m => m.CategoryId, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Thương hiệu</label>
+                            @Html.DropDownListFor(m => m.BrandId, (SelectList)ViewBag.Brands, "--- Chọn thương hiệu ---", new { @class = "form-select" })
+                        </div>
+                    </div>
+
+                    <div class="chart-box mb-4">
+                        <h6 class="fw-bold mb-3">Thuộc tính</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Dạng bào chế</label>
+                            @Html.DropDownListFor(m => m.DosageForm, (SelectList)ViewBag.DosageForms, "--- Chọn dạng ---", new { @class = "form-select" })
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">Đối tượng sử dụng</label>
+                            @Html.DropDownListFor(m => m.TargetAudience, (SelectList)ViewBag.TargetAudiences, "--- Chọn đối tượng ---", new { @class = "form-select" })
+                        </div>
+
+                        <div class="form-check form-switch mt-3">
+                            @Html.CheckBoxFor(m => m.IsActive, new { @class = "form-check-input" })
+                            <label class="form-check-label" for="IsActive">Đang kinh doanh</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold text-uppercase shadow-sm" style="background-color: var(--admin-primary); border: none;">
+                        <span class="material-symbols-outlined align-middle">update</span> Cập nhật thay đổi
+                    </button>
+
+                    <div class="mt-2 text-center">
+                        <a href="@Url.Action("Index")" class="text-muted text-decoration-none small">Hủy bỏ</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    CKEDITOR.replace('editorContent');
+    function previewImage(input, imgId) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById(imgId).src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>

@@ -1,0 +1,118 @@
+﻿@model congnghephanmem.Models.order
+
+@{
+    ViewBag.Title = "Chi tiết đơn hàng #" + Model.id;
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+}
+
+<div class="container py-5">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <a href="@Url.Action("History")" class="text-muted text-decoration-none d-flex align-items-center gap-1">
+            <span class="material-symbols-outlined">arrow_back</span> Quay lại
+        </a>
+        <span class="text-muted">/</span>
+        <span class="fw-bold">Chi tiết đơn hàng #ORD-@Model.id</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h6 class="fw-bold m-0 d-flex justify-content-between align-items-center">
+                        <span>Danh sách sản phẩm</span>
+                        <span class="badge bg-light text-dark border">@Model.order_items.Count món</span>
+                    </h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light small">
+                            <tr>
+                                <th class="px-4 py-3">Sản phẩm</th>
+                                <th class="py-3 text-center">Đơn giá</th>
+                                <th class="py-3 text-center">SL</th>
+                                <th class="py-3 text-end px-4">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var detail in Model.order_items)
+                            {
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="@detail.product.thumbnail_url" class="rounded border" width="50" height="50" style="object-fit: cover;">
+                                            <div>
+                                                <div class="fw-bold text-dark small">@detail.product.name</div>
+                                                <small class="text-muted">@detail.product.dosage_form</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center small">@string.Format("{0:0,0}đ", detail.price)</td>
+                                    <td class="text-center small">x @detail.quantity</td>
+                                    <td class="text-end px-4 fw-bold text-dark">@string.Format("{0:0,0}đ", detail.price * detail.quantity)</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="bg-light border-top">
+                            <tr>
+                                <td colspan="3" class="text-end py-3 text-muted">Phí vận chuyển</td>
+                                <td class="text-end px-4 py-3 text-muted">0đ</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end py-3 fw-bold fs-5 text-dark">Tổng cộng</td>
+                                <td class="text-end px-4 py-3 fw-bold fs-5 text-success">@string.Format("{0:0,0}đ", Model.total_money)</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <h6 class="fw-bold mb-3 border-bottom pb-2">Thông tin nhận hàng</h6>
+
+                <div class="mb-3">
+                    <label class="small text-muted d-block">Người nhận</label>
+                    <span class="fw-bold text-dark">@Model.shipping_address</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small text-muted d-block">Ngày đặt hàng</label>
+                    <span class="text-dark">@Model.created_at.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small text-muted d-block">Phương thức thanh toán</label>
+                    <span class="badge bg-light text-dark border">@Model.payment_method</span>
+                </div>
+
+                <div class="mt-3">
+                    <label class="small text-muted d-block mb-1">Trạng thái đơn hàng</label>
+                    @if (Model.status == "PENDING" || Model.status == "Chờ xác nhận")
+                    {
+                        <div class="alert alert-warning small m-0"><i class="material-symbols-outlined align-middle fs-6">hourglass_empty</i> Đang chờ cửa hàng xác nhận</div>
+                    }
+                    else if (Model.status == "SHIPPING" || Model.status == "Đang giao")
+                    {
+                        <div class="alert alert-info small m-0"><i class="material-symbols-outlined align-middle fs-6">local_shipping</i> Đơn hàng đang được vận chuyển</div>
+                    }
+                    else if (Model.status == "DELIVERED" || Model.status == "Giao thành công")
+                    {
+                        <div class="alert alert-success small m-0"><i class="material-symbols-outlined align-middle fs-6">check_circle</i> Giao hàng thành công</div>
+                    }
+                    else if (Model.status == "CANCELLED" || Model.status == "Đã hủy")
+                    {
+                        <div class="alert alert-danger small m-0"><i class="material-symbols-outlined align-middle fs-6">cancel</i> Đơn hàng đã bị hủy</div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.status == "PENDING" || Model.status == "Chờ xác nhận")
+            {
+                <button class="btn btn-outline-danger w-100 fw-bold py-2" onclick="alert('Vui lòng liên hệ hotline để hủy đơn hàng này!')">
+                    Yêu cầu hủy đơn hàng
+                </button>
+            }
+        </div>
+    </div>
+</div>

@@ -18,6 +18,14 @@
             transform: translateY(-3px);
         }
 
+    .text-up {
+        color: #00C092;
+    }
+
+    .text-down {
+        color: #FF4D4D;
+    }
+
     .stat-icon {
         width: 48px;
         height: 48px;
@@ -129,8 +137,16 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="stat-label">Tổng doanh thu</div>
-                    <div class="stat-value">125.660.000đ</div>
-                    <div class="stat-trend text-up">+12% so với tháng trước</div>
+                    <div class="stat-value">@string.Format("{0:0,0}đ", Model.TotalRevenue)</div>
+
+                    @if (Model.RevenueGrowth >= 0)
+                    {
+                        <div class="stat-trend text-up">+@Model.RevenueGrowth.ToString("0.0")% so với tháng trước</div>
+                    }
+                    else
+                    {
+                        <div class="stat-trend text-down">@Model.RevenueGrowth.ToString("0.0")% so với tháng trước</div>
+                    }
                 </div>
                 <div class="stat-icon icon-blue">
                     <span class="material-symbols-outlined">payments</span>
@@ -144,7 +160,7 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="stat-label">Đơn hàng mới</div>
-                    <div class="stat-value">89</div>
+                    <div class="stat-value">@Model.NewOrdersToday</div>
                     <div class="stat-trend text-muted">Trong 24 giờ qua</div>
                 </div>
                 <div class="stat-icon icon-green">
@@ -158,8 +174,8 @@
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-label">Sản phẩm hết hàng</div>
-                    <div class="stat-value">12</div>
+                    <div class="stat-label">Sắp hết hàng</div>
+                    <div class="stat-value">@Model.ProductsOutOfStock</div>
                     <div class="stat-trend text-down">Cần nhập thêm</div>
                 </div>
                 <div class="stat-icon icon-orange">
@@ -174,8 +190,8 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="stat-label">Khách hàng mới</div>
-                    <div class="stat-value">35</div>
-                    <div class="stat-trend text-muted">Trong tuần này</div>
+                    <div class="stat-value">@Model.NewCustomersThisWeek</div>
+                    <div class="stat-trend text-muted">Trong 7 ngày qua</div>
                 </div>
                 <div class="stat-icon icon-purple">
                     <span class="material-symbols-outlined">person_add</span>
@@ -188,7 +204,7 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
         <div class="chart-box h-100">
-            <h5 class="chart-title">Doanh thu 7 ngày qua</h5>
+            <h5 class="chart-title">Doanh thu 7 ngày qua (Triệu VNĐ)</h5>
             <div style="height: 300px;">
                 <canvas id="revenueChart"></canvas>
             </div>
@@ -202,59 +218,78 @@
                 <canvas id="orderStatusChart"></canvas>
             </div>
             <div class="mt-4 text-center d-flex justify-content-center gap-3">
-                <small><span class="text-success">●</span> Hoàn thành</small>
-                <small><span class="text-primary">●</span> Đang giao</small>
-                <small><span class="text-danger">●</span> Hủy</small>
+                <small><span class="text-success">●</span> Hoàn thành (@Model.OrderCompleted)</small>
+                <small><span class="text-primary">●</span> Đang xử lý (@Model.OrderShipping)</small>
+                <small><span class="text-danger">●</span> Hủy (@Model.OrderCancelled)</small>
             </div>
         </div>
     </div>
 </div>
 
 <div class="chart-box">
-    <h5 class="chart-title">Đơn hàng gần đây</h5>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="chart-title m-0">Đơn hàng gần đây</h5>
+        <a href="@Url.Action("Index", "Order")" class="btn btn-sm btn-light text-primary fw-bold">Xem tất cả</a>
+    </div>
+
     <div class="table-responsive">
         <table class="table table-borderless table-custom">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>TÊN KHÁCH HÀNG</th>
-                    <th>NGÀY</th>
-                    <th>SỐ TIỀN</th>
+                    <th>MÃ ĐƠN</th>
+                    <th>KHÁCH HÀNG</th>
+                    <th>NGÀY ĐẶT</th>
+                    <th>TỔNG TIỀN</th>
                     <th>TRẠNG THÁI</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>#ORD-001</td>
-                    <td>Nguyễn Văn A</td>
-                    <td>12/12/2025</td>
-                    <td>1.200.000đ</td>
-                    <td><span class="status-badge status-success">Hoàn thành</span></td>
-                </tr>
-                <tr>
-                    <td>#ORD-002</td>
-                    <td>Trần Thị B</td>
-                    <td>12/12/2025</td>
-                    <td>850.000đ</td>
-                    <td><span class="status-badge status-pending">Đang giao</span></td>
-                </tr>
-                <tr>
-                    <td>#ORD-003</td>
-                    <td>Lê Văn C</td>
-                    <td>11/12/2025</td>
-                    <td>320.000đ</td>
-                    <td><span class="status-badge status-success">Hoàn thành</span></td>
-                </tr>
+                @foreach (var order in Model.RecentOrders)
+                {
+                    <tr>
+                        <td><span class="fw-bold">#@order.id</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                    <span class="material-symbols-outlined fs-6 text-muted">person</span>
+                                </div>
+                                @(order.user != null ? order.user.full_name : "Khách vãng lai")
+                            </div>
+                        </td>
+                        <td>@order.created_at.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="fw-bold text-dark">@string.Format("{0:0,0}đ", order.total_money)</td>
+                        <td>
+                            @if (order.status == "DELIVERED" || order.status == "Hoàn thành")
+                            {
+                                <span class="status-badge status-success">Hoàn thành</span>
+                            }
+                            else if (order.status == "CANCELLED" || order.status == "Đã hủy")
+                            {
+                                <span class="status-badge bg-danger text-white">Đã hủy</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge status-pending">@order.status</span>
+                            }
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
     </div>
 </div>
 
 <script>
+    // Lấy dữ liệu từ C# Model và chuyển thành JSON để JS hiểu
+    var revenueLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.RevenueLabels));
+    var revenueData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.RevenueData));
+
+    var countCompleted = @Model.OrderCompleted;
+    var countShipping = @Model.OrderShipping;
+    var countCancelled = @Model.OrderCancelled;
+
     // 1. Line Chart (Doanh thu)
     const ctx1 = document.getElementById('revenueChart').getContext('2d');
-
-    // Tạo gradient xanh mint cho đẹp
     let gradient = ctx1.createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(0, 192, 146, 0.2)');
     gradient.addColorStop(1, 'rgba(0, 192, 146, 0)');
@@ -262,14 +297,14 @@
     new Chart(ctx1, {
         type: 'line',
         data: {
-            labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+            labels: revenueLabels, // Dùng dữ liệu thật
             datasets: [{
-                label: 'Doanh thu (triệu đồng)',
-                data: [12, 18, 5, 8, 4, 7, 15], // Dữ liệu giả lập đường cong
+                label: 'Doanh thu (Triệu đ)',
+                data: revenueData, // Dùng dữ liệu thật
                 borderColor: '#00C092',
                 backgroundColor: gradient,
                 borderWidth: 3,
-                tension: 0.4, // Tạo đường cong mềm mại
+                tension: 0.4,
                 fill: true,
                 pointBackgroundColor: '#fff',
                 pointBorderColor: '#00C092',
@@ -288,14 +323,14 @@
         }
     });
 
-    // 2. Donut Chart (Trạng thái đơn)
+    // 2. Donut Chart (Trạng thái)
     const ctx2 = document.getElementById('orderStatusChart').getContext('2d');
     new Chart(ctx2, {
         type: 'doughnut',
         data: {
-            labels: ['Hoàn thành', 'Đang giao', 'Hủy'],
+            labels: ['Hoàn thành', 'Đang xử lý', 'Đã hủy'],
             datasets: [{
-                data: [65, 25, 10], // Tỷ lệ giả lập
+                data: [countCompleted, countShipping, countCancelled], // Dùng dữ liệu thật
                 backgroundColor: ['#00C092', '#3B82F6', '#EF4444'],
                 borderWidth: 0,
                 hoverOffset: 4
@@ -304,7 +339,7 @@
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '75%', // Độ dày vòng tròn
+            cutout: '75%',
             plugins: { legend: { display: false } }
         }
     });

@@ -1,0 +1,154 @@
+﻿@model IEnumerable<congnghephanmem.Models.product>
+
+@{
+    ViewBag.Title = ViewBag.CategoryName; // Lấy tên danh mục làm tiêu đề tab
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+
+    // Lấy danh sách brand (Cần update Controller để có dữ liệu này, xem bên dưới)
+    var listBrands = ViewBag.Brands as List<congnghephanmem.Models.brand>;
+
+    // Lấy lại các giá trị filter để tích lại checkbox
+    var selectedBrands = ViewBag.CurrentBrandIds as int[];
+    var selectedPrice = ViewBag.CurrentPriceRange as string;
+    var selectedSort = ViewBag.CurrentSort as string;
+
+    // Lấy CategoryID để giữ nguyên trang khi submit form
+    int currentCatId = ViewBag.CategoryID != null ? (int)ViewBag.CategoryID : 0;
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")" class="text-decoration-none text-muted">Trang chủ</a></li>
+            <li class="breadcrumb-item active fw-bold text-dark" aria-current="page">@ViewBag.CategoryName</li>
+        </ol>
+    </nav>
+
+    <h2 class="fw-bold mb-4">@ViewBag.CategoryName</h2>
+
+    <form action="@Url.Action("Category", "Product", new { id = currentCatId })" method="get" id="filterForm">
+
+        <div class="row">
+            <aside class="col-lg-3 mb-4">
+                <div class="bg-white p-4 rounded-3 shadow-sm">
+                    <h5 class="fw-bold mb-3">Bộ lọc</h5>
+
+                    <div class="mb-4 border-top pt-3">
+                        <h6 class="fw-bold mb-2">Thương hiệu</h6>
+                        @if (listBrands != null && listBrands.Any())
+                        {
+                            foreach (var brand in listBrands)
+                            {
+                                bool isChecked = selectedBrands != null && selectedBrands.Contains(brand.id);
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="brandIds"
+                                           value="@brand.id"
+                                           id="brand_@brand.id"
+                                           onchange="this.form.submit()"
+                                           @(isChecked ? "checked" : "")>
+                                    <label class="form-check-label" for="brand_@brand.id">@brand.name</label>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted small">Đang cập nhật...</p>
+                        }
+                    </div>
+
+                    <div class="mb-4 border-top pt-3">
+                        <h6 class="fw-bold mb-2">Khoảng giá</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="priceRange" value="under100" id="price1"
+                                   onchange="this.form.submit()" @(selectedPrice == "under100" ? "checked" : "")>
+                            <label class="form-check-label" for="price1">Dưới 100.000đ</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="priceRange" value="100-300" id="price2"
+                                   onchange="this.form.submit()" @(selectedPrice == "100-300" ? "checked" : "")>
+                            <label class="form-check-label" for="price2">100k - 300k</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="priceRange" value="300-500" id="price3"
+                                   onchange="this.form.submit()" @(selectedPrice == "300-500" ? "checked" : "")>
+                            <label class="form-check-label" for="price3">300k - 500k</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="priceRange" value="above500" id="price4"
+                                   onchange="this.form.submit()" @(selectedPrice == "above500" ? "checked" : "")>
+                            <label class="form-check-label" for="price4">Trên 500.000đ</label>
+                        </div>
+                    </div>
+
+                    <a href="@Url.Action("Category", "Product", new { id = currentCatId })" class="btn btn-outline-secondary w-100 btn-sm">Xóa bộ lọc</a>
+                </div>
+            </aside>
+
+            <div class="col-lg-9">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <span class="text-muted">Hiển thị @Model.Count() sản phẩm</span>
+
+                    <select class="form-select w-auto border-0 shadow-sm bg-white" name="sort" onchange="this.form.submit()">
+                        <option value="default" @(selectedSort == "default" ? "selected" : "")>Sắp xếp theo: Mặc định</option>
+                        <option value="price_asc" @(selectedSort == "price_asc" ? "selected" : "")>Giá: Tăng dần</option>
+                        <option value="price_desc" @(selectedSort == "price_desc" ? "selected" : "")>Giá: Giảm dần</option>
+                        <option value="name_az" @(selectedSort == "name_az" ? "selected" : "")>Tên: A-Z</option>
+                    </select>
+                </div>
+
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            int discountPercent = 0;
+                            if (item.original_price > item.sale_price && item.original_price > 0)
+                            {
+                                discountPercent = (int)((item.original_price - item.sale_price) / item.original_price * 100);
+                            }
+
+                            <div class="col">
+                                <div class="card card-product h-100 p-3">
+                                    @if (discountPercent > 0)
+                                    {
+                                        <span class="position-absolute top-0 end-0 m-3 badge bg-danger">-@discountPercent%</span>
+                                    }
+                                    <a href="@Url.Action("Detail", "Product", new {id = item.id})">
+                                        <img src="@(string.IsNullOrEmpty(item.thumbnail_url) ? "https://via.placeholder.com/300x300" : item.thumbnail_url)"
+                                             class="card-img-top rounded mb-3" alt="@item.name" style="height: 200px; object-fit: contain;">
+                                    </a>
+
+                                    <div class="card-body p-0 d-flex flex-column">
+                                        <h6 class="card-title fw-bold mb-1 text-truncate">
+                                            <a href="@Url.Action("Detail", "Product", new {id = item.id})" class="text-decoration-none text-dark">@item.name</a>
+                                        </h6>
+                                        <p class="text-muted small mb-2 text-truncate">@item.description</p>
+                                        <div class="mt-auto">
+                                            <div class="d-flex align-items-baseline gap-2 mb-3">
+                                                <span class="fw-bold fs-5 text-primary-custom">@string.Format("{0:0,0}đ", item.sale_price)</span>
+                                                @if (discountPercent > 0)
+                                                {
+                                                    <span class="text-muted text-decoration-line-through small">@string.Format("{0:0,0}đ", item.original_price)</span>
+                                                }
+                                            </div>
+                                            <a href="@Url.Action("Detail", "Product", new {id = item.id})" class="btn btn-mint w-100 py-2">Chọn mua</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12 text-center py-5">
+                            <img src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" width="100" class="mb-3 opacity-50" />
+                            <p class="text-muted">Không tìm thấy sản phẩm nào phù hợp trong danh mục này.</p>
+                            <a href="@Url.Action("Index", "Home")" class="btn btn-primary mt-2">Xem tất cả sản phẩm</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản Trị Viên - Nhà Thuốc Online</title>
+    <title>Quản Trị Viên - Nhà Thuốc An Tâm</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -24,11 +24,10 @@
             overflow-x: hidden;
         }
 
-        /* SIDEBAR */
         .sidebar {
             width: var(--sidebar-width);
             height: 100vh;
-            background-color: var(--admin-dark);
+            background-color: #f8f9fa;
             position: fixed;
             top: 0;
             left: 0;
@@ -41,7 +40,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            color: white;
+            color: #495057;
             font-weight: 700;
             font-size: 1.2rem;
             margin-bottom: 40px;
@@ -54,20 +53,19 @@
             align-items: center;
             gap: 15px;
             padding: 12px 20px;
-            color: var(--admin-text-gray);
+            color: #495057;
             text-decoration: none;
             border-radius: 8px;
             margin-bottom: 5px;
             font-weight: 500;
             transition: all 0.2s;
         }
-
             .nav-item:hover {
-                background-color: rgba(255,255,255,0.05);
-                color: white;
+                background-color: #e9ecef;
+                color: #111;
             }
 
-            /* Class active sẽ được thêm động bằng C# */
+
             .nav-item.active {
                 background-color: var(--admin-primary);
                 color: white;
@@ -83,7 +81,7 @@
             padding: 20px 30px;
         }
 
-        /* Header & Footer styles giữ nguyên */
+
         .admin-header {
             display: flex;
             justify-content: space-between;
@@ -115,7 +113,22 @@
             justify-content: center;
             color: #555;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: 0.2s;
         }
+
+            .notif-btn:hover {
+                transform: scale(1.05);
+            }
+
+
+        .user-profile-box {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+            .user-profile-box:hover {
+                background-color: #e9ecef !important;
+            }
 
         .avatar-admin {
             width: 45px;
@@ -148,20 +161,24 @@
             align-items: center;
             gap: 10px;
             padding: 10px;
+            transition: 0.2s;
         }
 
             .admin-footer-link:hover {
                 color: white;
+            }
+
+            .admin-footer-link.logout:hover {
+                color: #ff6b6b; 
             }
     </style>
 </head>
 <body>
 
     @{
-        // Lấy tên Controller hiện tại từ URL
+
         string currentController = ViewContext.RouteData.Values["controller"]?.ToString();
 
-        // Hàm trả về chuỗi "active" nếu tên controller khớp
         string ActiveClass(string controllerName)
         {
             return currentController == controllerName ? "active" : "";
@@ -169,7 +186,7 @@
     }
 
     <div class="sidebar">
-        <a href="#" class="brand-logo">
+        <a href="/Dashboard" class="brand-logo">
             <span class="material-symbols-outlined text-success">admin_panel_settings</span>
             Quản Trị viên
         </a>
@@ -181,17 +198,17 @@
                 Tổng quan
             </a>
 
-            <a href="#" class="nav-item @ActiveClass("Order")">
+            <a href="@Url.Action("Index", "Order")" class="nav-item @ActiveClass("Order")">
                 <span class="material-symbols-outlined nav-icon">receipt_long</span>
                 Đơn hàng
             </a>
 
-            <a href="#" class="nav-item @ActiveClass("AdminProduct")">
+            <a href="@Url.Action("Index", "AdminProduct")" class="nav-item @ActiveClass("AdminProduct")">
                 <span class="material-symbols-outlined nav-icon">inventory_2</span>
                 Sản phẩm
             </a>
 
-            <a href="#" class="nav-item @ActiveClass("AdminUser")">
+            <a href="@Url.Action("Index", "AdminUser")" class="nav-item @ActiveClass("AdminUser")">
                 <span class="material-symbols-outlined nav-icon">group</span>
                 Khách hàng
             </a>
@@ -201,7 +218,7 @@
                 Mã khuyến mãi
             </a>
 
-            <a href="#" class="nav-item @ActiveClass("Review")">
+            <a href="@Url.Action("Index", "AdminReview")" class="nav-item @ActiveClass("Review")">
                 <span class="material-symbols-outlined nav-icon">rate_review</span>
                 Đánh giá
             </a>
@@ -210,26 +227,50 @@
                 <span class="material-symbols-outlined nav-icon">article</span>
                 Bài viết
             </a>
+
+            <a href="@Url.Action("Index", "AdminPrescription")" class="nav-item @ActiveClass("AdminPrescription")">
+                <span class="material-symbols-outlined nav-icon">medical_services</span>
+                Quản lý Đơn thuốc
+            </a>
         </nav>
 
-        <a href="#" class="admin-footer-link">
-            <span class="material-symbols-outlined">settings</span> Cài đặt
+        <a href="@Url.Action("Logout", "Account")" class="admin-footer-link logout">
+            <span class="material-symbols-outlined">logout</span> Đăng xuất
         </a>
     </div>
 
     <div class="main-content">
         <header class="admin-header">
             <h2 class="header-title">@ViewBag.Title</h2>
+
             <div class="user-profile">
-                <button class="notif-btn">
+                <button class="notif-btn position-relative">
                     <span class="material-symbols-outlined">notifications</span>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                        <span class="visually-hidden">New alerts</span>
+                    </span>
                 </button>
-                <div class="d-flex align-items-center gap-3 bg-white p-2 rounded-pill shadow-sm pe-4">
-                    <div class="avatar-admin"></div>
-                    <div class="admin-info">
-                        <span>Admin</span>
-                        <small>admin@nhathuoc.com</small>
+
+                <div class="dropdown">
+                    <div class="d-flex align-items-center gap-3 bg-white p-2 rounded-pill shadow-sm pe-4 user-profile-box" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="avatar-admin"></div>
+                        <div class="admin-info">
+                            <span>@Session["UserName"]</span> <small>Quản trị viên</small>
+                        </div>
+                        <span class="material-symbols-outlined text-muted ms-2 fs-6">expand_more</span>
                     </div>
+
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2">
+                        <li><h6 class="dropdown-header">Tài khoản</h6></li>
+                        <li><a class="dropdown-item" href="#"><i class="material-symbols-outlined align-middle fs-6 me-2">person</i> Hồ sơ cá nhân</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="material-symbols-outlined align-middle fs-6 me-2">settings</i> Cài đặt</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger fw-bold" href="@Url.Action("Logout", "Account")">
+                                <i class="material-symbols-outlined align-middle fs-6 me-2">logout</i> Đăng xuất
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </header>

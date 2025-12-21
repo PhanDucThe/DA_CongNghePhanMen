@@ -1,0 +1,174 @@
+﻿@{
+    ViewBag.Title = "Tải lên đơn thuốc";
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+
+    // Lấy Avatar cho Sidebar
+    string avatar = Session["UserAvatar"] as string ?? "/Content/images/default-user.png";
+}
+
+<style>
+    /* Style chung cho khung Profile */
+    .profile-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+    }
+
+    /* Style cho Sidebar Menu */
+    .profile-nav .nav-link {
+        color: #64748b;
+        font-weight: 500;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+    }
+
+        .profile-nav .nav-link:hover, .profile-nav .nav-link.active {
+            background-color: rgba(19, 236, 200, 0.1);
+            color: #13ecc8;
+        }
+
+    /* Vùng Upload ảnh */
+    .upload-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f8fafc;
+        position: relative;
+    }
+
+        .upload-zone:hover {
+            border-color: #13ecc8;
+            background: #f0fdfa;
+        }
+
+        .upload-zone img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            display: none;
+            margin: 0 auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .upload-zone.has-image .default-content {
+            display: none;
+        }
+
+        .upload-zone.has-image img {
+            display: block;
+        }
+</style>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="profile-card p-4 h-100">
+                <div class="text-center mb-4">
+                    <img src="@avatar" class="rounded-circle mb-3 shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                    <h6 class="fw-bold text-dark m-0">@Session["UserName"]</h6>
+                </div>
+                <div class="nav flex-column profile-nav">
+                    <a href="@Url.Action("Profile", "Account")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">person</span> Thông tin tài khoản
+                    </a>
+                    <a href="@Url.Action("Index", "Address")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">location_on</span> Sổ địa chỉ
+                    </a>
+                    <a href="@Url.Action("History", "Order")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">shopping_bag</span> Lịch sử đơn hàng
+                    </a>
+                    <a href="@Url.Action("Index", "Prescription")" class="nav-link active">
+                        <span class="material-symbols-outlined fs-5">description</span> Đơn thuốc của tôi
+                    </a>
+                    <a href="@Url.Action("ChangePassword", "Account")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">lock</span> Đổi mật khẩu
+                    </a>
+                    <a href="@Url.Action("Logout", "Account")" class="nav-link text-danger mt-3">
+                        <span class="material-symbols-outlined fs-5">logout</span> Đăng xuất
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="profile-card p-4 p-md-5">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <a href="@Url.Action("Index")" class="text-muted text-decoration-none d-flex align-items-center gap-1 hover-text-primary">
+                        <span class="material-symbols-outlined">arrow_back</span> Quay lại
+                    </a>
+                    <h4 class="fw-bold m-0 text-dark ms-2">Tải lên đơn thuốc mới</h4>
+                </div>
+
+                @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+                @using (Html.BeginForm("Upload", "Prescription", FormMethod.Post, new { enctype = "multipart/form-data" }))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-4">
+                        <div class="col-md-7">
+                            <label class="form-label fw-bold small text-muted">Hình ảnh đơn thuốc <span class="text-danger">*</span></label>
+
+                            <label for="fileInput" class="upload-zone w-100" id="dropZone">
+                                <div class="default-content">
+                                    <div class="mb-3 text-primary bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle">
+                                        <span class="material-symbols-outlined fs-1">add_a_photo</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark">Nhấn để tải ảnh lên</h6>
+                                    <p class="text-muted small m-0">Hỗ trợ: JPG, PNG, JPEG (Tối đa 5MB)</p>
+                                </div>
+                                <img id="previewImg" src="#" alt="Preview" />
+                            </label>
+
+                            <input type="file" name="file" id="fileInput" class="d-none" accept="image/*" onchange="previewFile(this)" required>
+                        </div>
+
+                        <div class="col-md-5">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small text-muted">Ghi chú cho dược sĩ</label>
+                                <textarea name="note" class="form-control" rows="6" placeholder="Ví dụ: Lấy thuốc cho 5 ngày, tôi bị dị ứng với Penicillin..."></textarea>
+                                <div class="form-text small"><i class="material-symbols-outlined align-middle fs-6" style="font-size: 14px;">info</i> Hãy ghi rõ triệu chứng hoặc yêu cầu đặc biệt.</div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary-custom py-3 fw-bold rounded-3 shadow-sm text-uppercase">
+                                    <span class="material-symbols-outlined align-middle">send</span> Gửi đơn thuốc
+                                </button>
+                                <a href="@Url.Action("Index")" class="btn btn-light mt-2 py-2 fw-bold text-muted">Hủy bỏ</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Script xem trước ảnh
+    function previewFile(input) {
+        var dropZone = document.getElementById('dropZone');
+        var preview = document.getElementById('previewImg');
+
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                dropZone.classList.add('has-image'); // Thêm class để ẩn nội dung default và hiện ảnh
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>

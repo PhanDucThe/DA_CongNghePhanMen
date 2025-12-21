@@ -1,0 +1,60 @@
+﻿@model IEnumerable<congnghephanmem.Models.comment>
+
+@if (Model != null && Model.Any())
+{
+    foreach (var item in Model)
+    {
+        // Lấy avatar user (giả sử có cột avatar trong bảng users, nếu không dùng ảnh mặc định)
+        string userAvatar = "/Content/images/default-user.png";
+        if (item.user != null && !string.IsNullOrEmpty(item.user.avatar))
+        {
+            userAvatar = item.user.avatar;
+        }
+
+        <div class="border-bottom pb-3 mb-3">
+            <div class="d-flex justify-content-between">
+                <div class="d-flex gap-3">
+                    <img src="@userAvatar" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
+                    <div>
+                        <h6 class="fw-bold mb-0">@item.user.full_name</h6>
+
+                        <div class="text-warning small mb-1">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= item.rating)
+                                {<i class="fas fa-star"></i> }
+                                else
+                                { <i class="far fa-star"></i>}
+                            }
+                        </div>
+
+                        @if (item.is_verified_purchase == true)
+                        {
+                            <span class="text-success small fw-bold"><i class="fas fa-check-circle"></i> Đã mua hàng</span>
+                        }
+                    </div>
+                </div>
+                <small class="text-muted">@item.created_at.Value.ToString("dd/MM/yyyy")</small>
+            </div>
+
+            <div class="mt-2 text-dark">
+                @item.content
+            </div>
+
+            @if (item.comment_medias.Any())
+            {
+                <div class="d-flex gap-2 mt-2 overflow-auto">
+                    @foreach (var media in item.comment_medias)
+                    {
+                        <img src="@media.media_url" class="rounded border" style="width: 80px; height: 80px; object-fit: cover; cursor: zoom-in;" onclick="window.open(this.src)">
+                    }
+                </div>
+            }
+
+        </div>
+    }
+}
+else
+{
+    <p class="text-center text-muted py-3">Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+}

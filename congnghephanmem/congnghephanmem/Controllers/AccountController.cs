@@ -1,26 +1,29 @@
-﻿using congnghephanmem.Models;
-using System.Web.Security;
+﻿using congnghephanmem.Helpers;
+using congnghephanmem.Models;
 using congnghephanmem.ViewModels;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Web;
 using System.Web.Mvc;
+using System.Web.Security;
 
 
 namespace congnghephanmem.Controllers
 {
     public class AccountController : Controller
     {
-        // Khởi tạo DbContext (Thay Db_CNPMEntities bằng tên Context thực tế trong file Models của bạn)
+
         private db_cnpmEntities db = new db_cnpmEntities();
 
-        // GET: /Account/Login
+
         [HttpGet]
         public ActionResult Login()
         {
-            // Nếu đã đăng nhập rồi thì đá về trang chủ
+
             if (Session["User"] != null)
             {
                 return RedirectToAction("Index", "Home");
@@ -28,16 +31,14 @@ namespace congnghephanmem.Controllers
             return View();
         }
 
-        // POST: /Account/Login
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // 1. Tìm user trong Database (Kiểm tra cả Email hoặc Số điện thoại)
-                // Lưu ý: Mật khẩu ở đây đang so sánh text thường. 
-                // Thực tế bạn nên mã hóa MD5 hoặc SHA256 trước khi so sánh.
+
                 var user = db.users.FirstOrDefault(u =>
                     (u.email == model.Username || u.phone_number == model.Username)
                     && u.password == model.Password
@@ -45,7 +46,7 @@ namespace congnghephanmem.Controllers
 
                 if (user != null)
                 {
-                    // 2. Đăng nhập thành công -> Lưu Session
+
                     Session["User"] = user;
                     Session["UserID"] = user.id;
                     Session["UserName"] = user.full_name;
@@ -53,14 +54,14 @@ namespace congnghephanmem.Controllers
                     Session["UserAvatar"] = user.avatar;
                     FormsAuthentication.SetAuthCookie(user.email, false);
 
-                    // Lấy Role của user (Giả sử user có 1 role chính)
+
                     var userRole = db.user_roles.FirstOrDefault(ur => ur.user_id == user.id);
                     if (userRole != null)
                     {
                         var role = db.roles.Find(userRole.role_id);
-                        Session["UserRole"] = role.code; // Ví dụ: 'ADMIN' hoặc 'CUSTOMER'
+                        Session["UserRole"] = role.code; 
 
-                        // 3. Điều hướng dựa trên quyền
+
                         if (role.code == "ADMIN")
                         {
                             return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
@@ -68,30 +69,27 @@ namespace congnghephanmem.Controllers
                     }
                     MergeCookieCartToDatabase(user.id);
 
-                    // Mặc định về trang chủ khách hàng
+
                     return RedirectToAction("Index", "Home");
                 }
                 else
                 {
-                    // Đăng nhập thất bại
                     ModelState.AddModelError("", "Tài khoản hoặc mật khẩu không chính xác, hoặc tài khoản đã bị khóa.");
                 }
             }
 
-            // Nếu dữ liệu không hợp lệ hoặc sai pass, trả lại View để nhập lại
             return View(model);
         }
 
         private void MergeCookieCartToDatabase(int userId)
         {
-            // 1. Đọc Cookie
+
             var cookie = Request.Cookies["ShoppingCart"];
-            if (cookie == null || string.IsNullOrEmpty(cookie.Value)) return; // Không có gì để gộp
+            if (cookie == null || string.IsNullOrEmpty(cookie.Value)) return; 
 
             var cookieItems = JsonConvert.DeserializeObject<List<CartItemCookie>>(Server.UrlDecode(cookie.Value));
             if (!cookieItems.Any()) return;
 
-            // 2. Lấy hoặc Tạo giỏ hàng DB
             var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
             if (cart == null)
             {
@@ -100,13 +98,13 @@ namespace congnghephanmem.Controllers
                 db.SaveChanges();
             }
 
-            // 3. Duyệt từng món trong Cookie đưa vào DB
+
             foreach (var item in cookieItems)
             {
                 var dbItem = db.cart_items.FirstOrDefault(ci => ci.cart_id == cart.id && ci.product_id == item.ProductId);
                 if (dbItem != null)
                 {
-                    dbItem.quantity += item.Quantity; // Cộng dồn nếu đã có
+                    dbItem.quantity += item.Quantity; 
                 }
                 else
                 {
@@ -130,31 +128,29 @@ namespace congnghephanmem.Controllers
             }
             db.SaveChanges();
 
-            // 4. Tính lại tổng tiền cho User
+
             var allItems = db.cart_items.Where(ci => ci.cart_id == cart.id).ToList();
             cart.total_items = allItems.Sum(x => x.quantity);
             cart.total_price = allItems.Sum(x => x.quantity * x.sale_price);
             db.SaveChanges();
 
-            // 5. Xóa Cookie sau khi đã gộp xong
+
             var expiredCookie = new HttpCookie("ShoppingCart") { Expires = DateTime.Now.AddDays(-1) };
             Response.Cookies.Add(expiredCookie);
         }
 
-        // Đăng xuất
+
         public ActionResult Logout()
         {
-            // Xóa Session
+
             Session.Clear();
             Session.Abandon();
 
-            // THÊM DÒNG NÀY: Xóa Cookie xác thực
             FormsAuthentication.SignOut();
 
             return RedirectToAction("Login");
         }
 
-        // GET: /Account/Register
         [HttpGet]
         public ActionResult Register()
         {
@@ -165,21 +161,20 @@ namespace congnghephanmem.Controllers
             return View();
         }
 
-        // POST: /Account/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Register(RegisterViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // 1. Kiểm tra Email hoặc SĐT đã tồn tại chưa
+
                 if (db.users.Any(x => x.email == model.Email || x.phone_number == model.PhoneNumber))
                 {
                     ModelState.AddModelError("", "Email hoặc Số điện thoại đã được đăng ký.");
                     return View(model);
                 }
 
-                // 2. Tạo User mới
+
                 var newUser = new user(); 
                 newUser.full_name = model.FullName;
                 newUser.email = model.Email;
@@ -189,13 +184,12 @@ namespace congnghephanmem.Controllers
                 newUser.created_at = DateTime.Now;
                 newUser.updated_at = DateTime.Now;
 
-                // Ảnh đại diện mặc định (nếu cần)
+
                 newUser.avatar = "/Content/images/default-avatar.png";
 
                 db.users.Add(newUser);
-                db.SaveChanges(); // Lưu để lấy ID vừa tạo
+                db.SaveChanges(); 
 
-                // 3. Gán quyền mặc định là 'CUSTOMER' (Khách hàng)
                 var customerRole = db.roles.FirstOrDefault(r => r.code == "CUSTOMER");
 
                 if (customerRole != null)
@@ -214,6 +208,188 @@ namespace congnghephanmem.Controllers
             }
 
             return View(model);
+        }
+
+
+
+        public ActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = db.users.FirstOrDefault(u => u.email == model.Email);
+                if (user == null)
+                {
+                    ModelState.AddModelError("Email", "Email này chưa được đăng ký trong hệ thống.");
+                    return View(model);
+                }
+
+                string newPassword = GenerateRandomPassword(8);
+
+                user.password = newPassword;
+                user.updated_at = DateTime.Now;
+                db.SaveChanges();
+
+
+                bool sendResult = SendEmail(user.email, "Cấp lại mật khẩu mới - Nhà Thuốc Online",
+                    $"<p>Xin chào <b>{user.full_name}</b>,</p>" +
+                    $"<p>Bạn vừa yêu cầu cấp lại mật khẩu. Mật khẩu mới của bạn là:</p>" +
+                    $"<h2 style='color: #00C092;'>{newPassword}</h2>" +
+                    $"<p>Vui lòng đăng nhập và đổi lại mật khẩu ngay để bảo mật thông tin.</p>");
+
+                if (sendResult)
+                {
+                    TempData["SuccessMessage"] = "Mật khẩu mới đã được gửi vào email của bạn. Vui lòng kiểm tra hộp thư.";
+                    return RedirectToAction("Login");
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Gửi email thất bại. Vui lòng thử lại sau.");
+                }
+            }
+            return View(model);
+        }
+
+
+        private string GenerateRandomPassword(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var random = new Random();
+            return new string(Enumerable.Repeat(chars, length)
+              .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        private bool SendEmail(string toEmail, string subject, string body)
+        {
+            try
+            {
+                var message = new MailMessage();
+
+                var smtpSection = (System.Net.Configuration.SmtpSection)System.Configuration.ConfigurationManager.GetSection("system.net/mailSettings/smtp");
+                string fromEmail = smtpSection.From;
+
+                message.From = new MailAddress(fromEmail, "Nhà Thuốc An Tâm");
+
+                message.To.Add(new MailAddress(toEmail));
+                message.Subject = subject;
+                message.Body = body;
+                message.IsBodyHtml = true;
+
+                using (var client = new SmtpClient())
+                {
+                    client.Send(message);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+
+        public ActionResult Profile()
+        {
+            if (Session["UserID"] == null)
+            {
+                return RedirectToAction("Login");
+            }
+
+            int userId = (int)Session["UserID"];
+            var user = db.users.Find(userId);
+
+            if (user == null) return RedirectToAction("Login");
+
+            var model = new UserProfileViewModel
+            {
+                Id = user.id,
+                FullName = user.full_name,
+                Email = user.email,
+                PhoneNumber = user.phone_number,
+                Address = "", 
+                CurrentAvatar = string.IsNullOrEmpty(user.avatar) ? "/Content/images/default-user.png" : user.avatar
+            };
+
+            return View(model);
+        }
+
+
+        public ActionResult ChangePassword()
+        {
+            if (Session["UserID"] == null) return RedirectToAction("Login");
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult ChangePassword(ChangePasswordViewModel model)
+        {
+            if (Session["UserID"] == null) return RedirectToAction("Login");
+
+            if (ModelState.IsValid)
+            {
+                int userId = (int)Session["UserID"];
+                var user = db.users.Find(userId);
+                if (user.password != model.CurrentPassword)
+                {
+                    ModelState.AddModelError("CurrentPassword", "Mật khẩu hiện tại không đúng.");
+                    return View(model);
+                }
+
+                user.password = model.NewPassword; 
+                user.updated_at = DateTime.Now;
+
+                db.SaveChanges();
+
+                TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
+
+                return RedirectToAction("ChangePassword");
+            }
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult UpdateProfile(UserProfileViewModel model)
+        {
+            if (Session["UserID"] == null) return RedirectToAction("Login");
+
+            if (ModelState.IsValid)
+            {
+                int userId = (int)Session["UserID"];
+                var user = db.users.Find(userId);
+
+                if (user != null)
+                {
+                    user.full_name = model.FullName;
+                    user.phone_number = model.PhoneNumber;
+                    user.updated_at = DateTime.Now;
+
+                    if (model.AvatarFile != null && model.AvatarFile.ContentLength > 0)
+                    {
+                        var cloud = new CloudinaryService();
+                        string newAvatarUrl = cloud.UploadImage(model.AvatarFile);
+                        user.avatar = newAvatarUrl;
+                        Session["UserAvatar"] = newAvatarUrl;
+                    }
+
+                    Session["UserName"] = user.full_name;
+
+                    db.SaveChanges();
+
+                    TempData["SuccessMessage"] = "Cập nhật hồ sơ thành công!";
+                    return RedirectToAction("Profile");
+                }
+            }
+
+            return View("Profile", model);
         }
     }
 }

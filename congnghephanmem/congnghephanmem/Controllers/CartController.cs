@@ -1,6 +1,7 @@
-﻿using congnghephanmem.Models;
+﻿using congnghephanmem.Helpers;
+using congnghephanmem.Models;
 using congnghephanmem.ViewModels;
-using Newtonsoft.Json; // Cần thư viện này
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,17 +15,12 @@ namespace congnghephanmem.Controllers
         private db_cnpmEntities db = new db_cnpmEntities();
         private const string CartCookieName = "ShoppingCart";
 
-
-        // GET: Cart (Trang giỏ hàng)
-        public ActionResult Index()
+        private List<CartItemViewModel> GetCartItems()
         {
-            var model = new CartMainViewModel();
             List<CartItemViewModel> items = new List<CartItemViewModel>();
 
-            // 1. LẤY DỮ LIỆU GIỎ HÀNG
             if (Session["User"] != null)
             {
-                // -- ĐÃ ĐĂNG NHẬP (Lấy từ DB) --
                 int userId = (int)Session["UserID"];
                 var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
                 if (cart != null)
@@ -32,23 +28,24 @@ namespace congnghephanmem.Controllers
                     var dbItems = db.cart_items.Where(ci => ci.cart_id == cart.id).ToList();
                     foreach (var dbItem in dbItems)
                     {
-                        // Lấy thêm thông tin slug từ bảng product
                         var product = db.products.Find(dbItem.product_id);
-                        items.Add(new CartItemViewModel
+                        if (product != null)
                         {
-                            ProductId = dbItem.product_id,
-                            ProductName = dbItem.product_name,
-                            ProductImage = dbItem.image,
-                            Price = dbItem.sale_price,
-                            Quantity = dbItem.quantity,
-                            Slug = product?.slug
-                        });
+                            items.Add(new CartItemViewModel
+                            {
+                                ProductId = dbItem.product_id,
+                                ProductName = dbItem.product_name,
+                                ProductImage = dbItem.image,
+                                Price = dbItem.sale_price,
+                                Quantity = dbItem.quantity,
+                                Slug = product.slug
+                            });
+                        }
                     }
                 }
             }
             else
             {
-                // -- KHÁCH VÃNG LAI (Lấy từ Cookie) --
                 var cookieItems = GetCartFromCookie();
                 foreach (var cookieItem in cookieItems)
                 {
@@ -67,43 +64,203 @@ namespace congnghephanmem.Controllers
                     }
                 }
             }
+            return items;
+        }
 
-            model.Items = items;
+        private void ResetCouponSession()
+        {
+            Session["DiscountAmount"] = null;
+            Session["CouponCode"] = null;
+            Session["DiscountCode"] = null;
+        }
 
-            // 2. TÍNH TOÁN TIỀN
-            model.SubTotal = items.Sum(x => x.Total);
+        public ActionResult Index()
+        {
+            var model = new CartMainViewModel();
+            model.Items = GetCartItems(); 
 
-            // Logic Freeship: Nếu Tạm tính >= 150k thì Ship = 0, ngược lại 20k
-            if (model.SubTotal >= model.FreeShipThreshold || model.SubTotal == 0)
+            model.SubTotal = model.Items.Sum(x => x.Total);
+
+
+            model.ShippingFee = ShippingHelper.CalculateFee(model.SubTotal, "STANDARD");
+
+            model.DiscountAmount = 0;
+            if (Session["DiscountAmount"] != null)
             {
-                model.ShippingFee = 0;
-            }
-            else
-            {
-                model.ShippingFee = 20000;
+                decimal savedDiscount = (decimal)Session["DiscountAmount"];
+                if (savedDiscount > model.SubTotal) savedDiscount = model.SubTotal;
+
+                model.DiscountAmount = savedDiscount;
+                model.CouponCode = Session["DiscountCode"] as string;
             }
 
-            model.Total = model.SubTotal + model.ShippingFee;
+            model.Total = model.SubTotal + model.ShippingFee - model.DiscountAmount;
+            if (model.Total < 0) model.Total = 0;
 
-            // 3. LẤY SẢN PHẨM GỢI Ý (Lấy 5 sản phẩm rẻ dưới 50k để user mua thêm cho đủ freeship)
             model.Recommendations = db.products
                 .Where(p => p.is_active == true && p.sale_price < 50000)
-                .OrderBy(x => Guid.NewGuid()) // Random
+                .OrderBy(x => Guid.NewGuid())
                 .Take(5)
                 .ToList();
 
             return View(model);
         }
 
-
-        // Action cập nhật số lượng (Gọi bằng AJAX hoặc Reload)
-        public ActionResult UpdateQuantity(int productId, int quantity)
+        [HttpPost]
+        public ActionResult ApplyCoupon(string code)
         {
-            if (quantity < 1) quantity = 1;
+            try
+            {
+                var items = GetCartItems();
+                if (!items.Any()) return Json(new { success = false, message = "Giỏ hàng đang trống!" });
+
+                decimal subTotal = items.Sum(x => x.Total);
+                var coupon = db.coupons.FirstOrDefault(c => c.code == code && c.is_active == true);
+                if (coupon == null)
+                {
+                    ResetCouponSession();
+                    return Json(new { success = false, message = "Mã giảm giá không tồn tại hoặc đã hết hạn!" });
+                }
+
+                var conditions = db.coupon_conditions.Where(c => c.coupon_id == coupon.id).ToList();
+                decimal discountAmount = 0;
+                if (!conditions.Any())
+                {
+                    return Json(new { success = false, message = "Mã giảm giá này chưa được cấu hình!" });
+                }
+
+                foreach (var cond in conditions)
+                {
+                    if (cond.attribute == "SUBTOTAL" || cond.attribute == "TOTAL_ORDER")
+                    {
+                        decimal conditionValue;
+                        if (!decimal.TryParse(cond.value, out conditionValue)) continue;
+
+                        bool conditionMet = true;
+                        switch (cond.@operator)
+                        {
+                            case ">=":
+                                if (subTotal < conditionValue) conditionMet = false;
+                                break;
+                            case ">":
+                                if (subTotal <= conditionValue) conditionMet = false;
+                                break;
+                            case "=":
+                            case "==":
+                                if (subTotal != conditionValue) conditionMet = false;
+                                break;
+                            case "<":
+                                if (subTotal >= conditionValue) conditionMet = false;
+                                break;
+                            }
+
+                            if (!conditionMet)
+                            {
+                                return Json(new { success = false, message = $"Đơn hàng phải từ {conditionValue:N0}đ mới được dùng mã này." });
+                            }
+                        }
+
+                        if (cond.discount_type == "PERCENTAGE")
+                        {
+                            discountAmount += subTotal * (cond.discount_amount / 100);
+                        }
+                        else if (cond.discount_type == "FIXED_AMOUNT")
+                        {
+                            discountAmount += cond.discount_amount;
+                        }
+                    }
+
+                    if (discountAmount <= 0)
+                    {
+                        return Json(new { success = false, message = "Mã này không áp dụng giảm giá nào cho đơn hàng của bạn." });
+                    }
+                    if (discountAmount > subTotal) discountAmount = subTotal;
+
+
+                    decimal shippingFee = (subTotal >= 150000 || subTotal == 0) ? 0 : 20000;
+                    decimal finalTotal = subTotal + shippingFee - discountAmount;
+
+
+                    Session["DiscountCode"] = code;
+                    Session["DiscountAmount"] = discountAmount;
+
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Áp dụng mã thành công!",
+                        discountStr = discountAmount.ToString("N0") + "đ",
+                        totalStr = finalTotal.ToString("N0") + "đ"
+                    });
+                }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi xử lý: " + ex.Message });
+            }
+        }
+
+
+        [HttpPost]
+        public ActionResult AddToCart(int productId, int quantity)
+        {
+            ResetCouponSession(); 
 
             if (Session["User"] != null)
             {
-                // Update DB
+                int userId = (int)Session["UserID"];
+                var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
+                if (cart == null)
+                {
+                    cart = new cart { user_id = userId, created_at = DateTime.Now, total_items = 0, total_price = 0 };
+                    db.carts.Add(cart);
+                    db.SaveChanges();
+                }
+
+                var cartItem = db.cart_items.FirstOrDefault(ci => ci.cart_id == cart.id && ci.product_id == productId);
+                var product = db.products.Find(productId);
+
+                if (cartItem != null)
+                {
+                    cartItem.quantity += quantity;
+                    cartItem.updated_at = DateTime.Now;
+                }
+                else
+                {
+                    cartItem = new cart_items
+                    {
+                        cart_id = cart.id,
+                        product_id = productId,
+                        quantity = quantity,
+                        product_name = product.name,
+                        image = product.thumbnail_url,
+                        original_price = product.original_price,
+                        sale_price = product.sale_price,
+                        created_at = DateTime.Now
+                    };
+                    db.cart_items.Add(cartItem);
+                }
+                db.SaveChanges();
+                UpdateCartTotals(cart.id);
+            }
+            else
+            {
+                var list = GetCartFromCookie();
+                var item = list.FirstOrDefault(x => x.ProductId == productId);
+                if (item != null) item.Quantity += quantity;
+                else list.Add(new CartItemCookie { ProductId = productId, Quantity = quantity });
+                SaveCartToCookie(list);
+            }
+
+            if (Request.UrlReferrer != null) return Redirect(Request.UrlReferrer.ToString());
+            return RedirectToAction("Index");
+        }
+
+        public ActionResult UpdateQuantity(int productId, int quantity)
+        {
+            if (quantity < 1) quantity = 1;
+            ResetCouponSession(); 
+
+            if (Session["User"] != null)
+            {
                 int userId = (int)Session["UserID"];
                 var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
                 if (cart != null)
@@ -113,12 +270,12 @@ namespace congnghephanmem.Controllers
                     {
                         item.quantity = quantity;
                         db.SaveChanges();
+                        UpdateCartTotals(cart.id);
                     }
                 }
             }
             else
             {
-                // Update Cookie
                 var list = GetCartFromCookie();
                 var item = list.FirstOrDefault(x => x.ProductId == productId);
                 if (item != null)
@@ -130,11 +287,10 @@ namespace congnghephanmem.Controllers
             return RedirectToAction("Index");
         }
 
-
-
-        // Action xóa sản phẩm
         public ActionResult Remove(int productId)
         {
+            ResetCouponSession(); 
+
             if (Session["User"] != null)
             {
                 int userId = (int)Session["UserID"];
@@ -146,6 +302,7 @@ namespace congnghephanmem.Controllers
                     {
                         db.cart_items.Remove(item);
                         db.SaveChanges();
+                        UpdateCartTotals(cart.id);
                     }
                 }
             }
@@ -163,80 +320,6 @@ namespace congnghephanmem.Controllers
         }
 
 
-
-        // POST: /Cart/AddToCart
-        [HttpPost]
-        public ActionResult AddToCart(int productId, int quantity)
-        {
-            // 1. TRƯỜNG HỢP: ĐÃ ĐĂNG NHẬP (Lưu vào DB)
-            if (Session["User"] != null)
-            {
-                int userId = (int)Session["UserID"];
-
-                // Tìm giỏ hàng của user
-                var cart = db.carts.FirstOrDefault(c => c.user_id == userId);
-                if (cart == null)
-                {
-                    cart = new cart { user_id = userId, created_at = DateTime.Now, total_items = 0, total_price = 0 };
-                    db.carts.Add(cart);
-                    db.SaveChanges();
-                }
-
-                // Tìm sản phẩm trong giỏ
-                var cartItem = db.cart_items.FirstOrDefault(ci => ci.cart_id == cart.id && ci.product_id == productId);
-                var product = db.products.Find(productId);
-
-                if (cartItem != null)
-                {
-                    // Đã có -> Tăng số lượng
-                    cartItem.quantity += quantity;
-                    cartItem.updated_at = DateTime.Now;
-                }
-                else
-                {
-                    // Chưa có -> Thêm mới
-                    cartItem = new cart_items
-                    {
-                        cart_id = cart.id,
-                        product_id = productId,
-                        quantity = quantity,
-                        product_name = product.name,
-                        image = product.thumbnail_url,
-                        original_price = product.original_price,
-                        sale_price = product.sale_price,
-                        created_at = DateTime.Now
-                    };
-                    db.cart_items.Add(cartItem);
-                }
-
-                db.SaveChanges();
-                UpdateCartTotals(cart.id); // Hàm tính lại tổng tiền (viết ở dưới)
-            }
-            // 2. TRƯỜNG HỢP: KHÁCH VÃNG LAI (Lưu vào Cookie)
-            else
-            {
-                List<CartItemCookie> cartList = GetCartFromCookie();
-
-                var item = cartList.FirstOrDefault(x => x.ProductId == productId);
-                if (item != null)
-                {
-                    item.Quantity += quantity;
-                }
-                else
-                {
-                    cartList.Add(new CartItemCookie { ProductId = productId, Quantity = quantity });
-                }
-
-                SaveCartToCookie(cartList);
-            }
-
-            // Quay lại trang trước đó
-            return Redirect(Request.UrlReferrer.ToString());
-        }
-
-        // --- CÁC HÀM HELPER (HỖ TRỢ) ---
-
-        // Helper 1: Lấy danh sách từ Cookie
         private List<CartItemCookie> GetCartFromCookie()
         {
             var cookie = Request.Cookies[CartCookieName];
@@ -247,16 +330,14 @@ namespace congnghephanmem.Controllers
             return new List<CartItemCookie>();
         }
 
-        // Helper 2: Lưu danh sách vào Cookie
         private void SaveCartToCookie(List<CartItemCookie> cartList)
         {
             var json = JsonConvert.SerializeObject(cartList);
             var cookie = new HttpCookie(CartCookieName, Server.UrlEncode(json));
-            cookie.Expires = DateTime.Now.AddDays(30); // Lưu 30 ngày
+            cookie.Expires = DateTime.Now.AddDays(30);
             Response.Cookies.Add(cookie);
         }
 
-        // Helper 3: Cập nhật tổng số lượng/tiền cho DB Cart
         private void UpdateCartTotals(int cartId)
         {
             var cart = db.carts.Find(cartId);
@@ -269,12 +350,10 @@ namespace congnghephanmem.Controllers
             }
         }
 
-        // Helper 4: Action trả về số lượng để hiện lên Header (Quan trọng)
         [ChildActionOnly]
         public ActionResult GetCartCount()
         {
             int count = 0;
-
             if (Session["User"] != null)
             {
                 int userId = (int)Session["UserID"];
@@ -286,7 +365,6 @@ namespace congnghephanmem.Controllers
                 var list = GetCartFromCookie();
                 count = list.Sum(x => x.Quantity);
             }
-
             return Content(count.ToString());
         }
     }

@@ -1,0 +1,157 @@
+﻿@model IEnumerable<congnghephanmem.Models.order>
+
+@{
+    ViewBag.Title = "Lịch sử mua hàng";
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+
+    string avatar = Session["UserAvatar"] as string ?? "/Content/images/default-user.png";
+}
+
+<style>
+    .profile-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+    }
+
+    .profile-nav .nav-link {
+        color: #64748b;
+        font-weight: 500;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .profile-nav .nav-link:hover, .profile-nav .nav-link.active {
+            background-color: rgba(19, 236, 200, 0.1);
+            color: #13ecc8;
+        }
+
+    .badge-status {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .st-pending {
+        background: #fff7ed;
+        color: #c2410c;
+        border: 1px solid #ffedd5;
+    }
+
+    .st-shipping {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #dbeafe;
+    }
+
+    .st-success {
+        background: #f0fdf4;
+        color: #15803d;
+        border: 1px solid #dcfce7;
+    }
+
+    .st-cancel {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fee2e2;
+    }
+
+</style>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="profile-card p-4 h-100">
+                <div class="text-center mb-4">
+                    <img src="@avatar" class="rounded-circle mb-3 shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                    <h6 class="fw-bold text-dark m-0">@Session["UserName"]</h6>
+                </div>
+                <div class="nav flex-column profile-nav">
+                    <a href="@Url.Action("Profile", "Account")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">person</span> Thông tin tài khoản
+                    </a>
+                    <a href="@Url.Action("Index", "Address")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">location_on</span> Sổ địa chỉ
+                    </a>
+                    <a href="@Url.Action("History", "Order")" class="nav-link active">
+                        <span class="material-symbols-outlined fs-5">shopping_bag</span> Lịch sử đơn hàng
+                    </a>
+                    <a href="@Url.Action("ChangePassword", "Account")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">lock</span> Đổi mật khẩu
+                    </a>
+                    <a href="@Url.Action("Logout", "Account")" class="nav-link text-danger mt-3">
+                        <span class="material-symbols-outlined fs-5">logout</span> Đăng xuất
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="profile-card p-4 p-md-5">
+                <h4 class="fw-bold text-dark mb-4">Lịch sử đơn hàng</h4>
+
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger">@TempData["Error"]</div>
+                }
+
+                @if (Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light text-uppercase small text-muted">
+                                <tr>
+                                    <th class="py-3">Mã đơn</th>
+                                    <th class="py-3">Ngày đặt</th>
+                                    <th class="py-3">Trạng thái</th>
+                                    <th class="py-3 text-end">Tổng tiền</th>
+                                    <th class="py-3 text-end">Chi tiết</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    string statusClass = "st-pending";
+                                    string statusText = item.status;
+
+                                    if (item.status == "PENDING" || item.status == "Chờ xác nhận") { statusClass = "st-pending"; statusText = "Chờ xác nhận"; }
+                                    else if (item.status == "SHIPPING" || item.status == "Đang giao") { statusClass = "st-shipping"; statusText = "Đang giao hàng"; }
+                                    else if (item.status == "DELIVERED" || item.status == "Giao thành công") { statusClass = "st-success"; statusText = "Hoàn thành"; }
+                                    else if (item.status == "CANCELLED" || item.status == "Đã hủy") { statusClass = "st-cancel"; statusText = "Đã hủy"; }
+
+                                    <tr>
+                                        <td class="fw-bold text-primary">#ORD-@item.id</td>
+                                        <td class="text-muted small">@item.created_at.Value.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td><span class="badge-status @statusClass">@statusText</span></td>
+                                        <td class="text-end fw-bold text-dark">@string.Format("{0:0,0}đ", item.total_money)</td>
+                                        <td class="text-end">
+                                            <a href="@Url.Action("DetailsCustomer", new { id = item.id })" class="btn btn-light btn-sm rounded-circle shadow-sm" title="Xem chi tiết">
+                                                <i class="material-symbols-outlined fs-6 text-muted">arrow_forward</i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2038/2038854.png" width="100" class="opacity-25 mb-3" />
+                        <p class="text-muted">Bạn chưa có đơn hàng nào.</p>
+                        <a href="@Url.Action("Index", "Home")" class="btn btn-primary-custom text-white fw-bold">Mua sắm ngay</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

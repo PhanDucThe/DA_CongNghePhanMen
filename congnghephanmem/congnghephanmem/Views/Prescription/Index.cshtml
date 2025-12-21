@@ -1,0 +1,172 @@
+﻿@model IEnumerable<congnghephanmem.Models.prescription>
+
+@{
+    ViewBag.Title = "Đơn thuốc của tôi";
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+
+    // Avatar cho Sidebar
+    string avatar = Session["UserAvatar"] as string ?? "/Content/images/default-user.png";
+}
+
+<style>
+    .profile-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+    }
+
+    .profile-nav .nav-link {
+        color: #64748b;
+        font-weight: 500;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none; /* Bỏ gạch chân */
+    }
+
+        .profile-nav .nav-link:hover, .profile-nav .nav-link.active {
+            background-color: rgba(19, 236, 200, 0.1);
+            color: #13ecc8;
+        }
+
+    /* Badge trạng thái */
+    .badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+
+    .bg-warning {
+        background-color: #fff7ed !important;
+        color: #c2410c !important;
+        border: 1px solid #ffedd5;
+    }
+
+    .bg-success {
+        background-color: #f0fdf4 !important;
+        color: #15803d !important;
+        border: 1px solid #dcfce7;
+    }
+
+    .bg-danger {
+        background-color: #fef2f2 !important;
+        color: #b91c1c !important;
+        border: 1px solid #fee2e2;
+    }
+</style>
+
+<div class="container py-5">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="material-symbols-outlined align-middle me-2">check_circle</i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="profile-card p-4 h-100">
+                <div class="text-center mb-4">
+                    <img src="@avatar" class="rounded-circle mb-3 shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                    <h6 class="fw-bold text-dark m-0">@Session["UserName"]</h6>
+                </div>
+                <div class="nav flex-column profile-nav">
+                    <a href="@Url.Action("Profile", "Account")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">person</span> Thông tin tài khoản
+                    </a>
+                    <a href="@Url.Action("Index", "Address")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">location_on</span> Sổ địa chỉ
+                    </a>
+                    <a href="@Url.Action("History", "Order")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">shopping_bag</span> Lịch sử đơn hàng
+                    </a>
+                    <a href="@Url.Action("Index", "Prescription")" class="nav-link active">
+                        <span class="material-symbols-outlined fs-5">description</span> Đơn thuốc của tôi
+                    </a>
+                    <a href="@Url.Action("ChangePassword", "Account")" class="nav-link">
+                        <span class="material-symbols-outlined fs-5">lock</span> Đổi mật khẩu
+                    </a>
+                    <a href="@Url.Action("Logout", "Account")" class="nav-link text-danger mt-3">
+                        <span class="material-symbols-outlined fs-5">logout</span> Đăng xuất
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="profile-card p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold m-0 text-dark">Đơn thuốc của tôi</h4>
+                    <a href="@Url.Action("Upload")" class="btn btn-primary-custom text-white fw-bold d-flex align-items-center gap-2 shadow-sm rounded-3">
+                        <span class="material-symbols-outlined">upload_file</span> Tải lên mới
+                    </a>
+                </div>
+
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <div class="card mb-3 border-0 shadow-sm p-3 bg-light">
+                            <div class="d-flex gap-3 align-items-start">
+                                <div style="width: 80px; height: 80px; flex-shrink: 0;">
+                                    <img src="@item.image_url" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; cursor: zoom-in;"
+                                         onclick="window.open(this.src)" title="Nhấn để xem ảnh lớn">
+                                </div>
+
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="fw-bold text-dark m-0">Đơn ngày @item.created_at.Value.ToString("dd/MM/yyyy HH:mm")</h6>
+
+                                        @if (item.status == "PENDING")
+                                        {
+                                            <span class="badge bg-warning">Chờ duyệt</span>
+                                        }
+                                        else if (item.status == "APPROVED")
+                                        {
+                                            <span class="badge bg-success">Đã tư vấn</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Từ chối</span>
+                                        }
+                                    </div>
+
+                                    <p class="text-muted small mb-2">
+                                        <i class="material-symbols-outlined align-middle fs-6">edit_note</i>
+                                        Ghi chú: @(string.IsNullOrEmpty(item.note) ? "Không có ghi chú" : item.note)
+                                    </p>
+
+                                    @if (!string.IsNullOrEmpty(item.pharmacist_response))
+                                    {
+                                        <div class="alert alert-white border-primary border-start border-4 mt-2 p-3 small shadow-sm bg-white">
+                                            <div class="fw-bold text-primary mb-1 d-flex align-items-center gap-1">
+                                                <span class="material-symbols-outlined fs-6">support_agent</span> Dược sĩ phản hồi:
+                                            </div>
+                                            <div class="text-dark">@Html.Raw(item.pharmacist_response)</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2965/2965335.png" width="100" class="opacity-25 mb-3" />
+                        <p class="text-muted">Bạn chưa tải lên đơn thuốc nào.</p>
+                        <p class="small text-muted">Hãy tải lên ảnh đơn thuốc để được dược sĩ tư vấn mua hàng nhanh chóng.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

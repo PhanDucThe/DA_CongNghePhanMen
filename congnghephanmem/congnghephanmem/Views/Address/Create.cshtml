@@ -1,0 +1,46 @@
+﻿@model congnghephanmem.Models.user_addresses
+
+@{
+    ViewBag.Title = "Thêm địa chỉ mới";
+    Layout = "~/Views/Shared/_LayoutCustomer.cshtml";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <a href="@Url.Action("Index")" class="text-muted"><span class="material-symbols-outlined">arrow_back</span></a>
+                    <h4 class="fw-bold m-0">Thêm địa chỉ mới</h4>
+                </div>
+
+                @using (Html.BeginForm())
+                {
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="fw-bold small text-muted mb-1">Tên người nhận</label>
+                        @Html.TextBoxFor(m => m.recipient_name, new { @class = "form-control", placeholder = "Ví dụ: Nguyễn Văn A", @required = "required" })
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold small text-muted mb-1">Số điện thoại</label>
+                        @Html.TextBoxFor(m => m.phone_number, new { @class = "form-control", placeholder = "Ví dụ: 0901234567", @required = "required", @type = "tel" })
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold small text-muted mb-1">Địa chỉ chi tiết</label>
+                        @Html.TextAreaFor(m => m.address_line, new { @class = "form-control", rows = "3", placeholder = "Số nhà, Tên đường, Phường/Xã, Quận/Huyện...", @required = "required" })
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        @Html.CheckBox("is_default", Model.is_default ?? false, new { @class = "form-check-input" })
+                        <label class="form-check-label" for="is_default">Đặt làm địa chỉ mặc định</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom w-100 py-3 rounded-3 fw-bold">Lưu địa chỉ</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>

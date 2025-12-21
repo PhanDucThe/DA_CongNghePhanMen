@@ -9,11 +9,14 @@ namespace congnghephanmem.ViewModels
     {
         public int ProductId { get; set; }
         public string ProductName { get; set; }
-        public string ProductImage { get; set; } // Thumbnail
-        public string Slug { get; set; } // Để click vào xem chi tiết
+        public string ProductImage { get; set; }
         public decimal Price { get; set; }
-        public decimal OriginalPrice { get; set; } // Để hiện giá gốc nếu cần
         public int Quantity { get; set; }
+        public string Slug { get; set; }
+
+        // --- SỬA DÒNG NÀY ---
+        // Tự động tính tiền khi Price hoặc Quantity thay đổi
+        // Không cần set thủ công
         public decimal Total => Price * Quantity;
     }
 }

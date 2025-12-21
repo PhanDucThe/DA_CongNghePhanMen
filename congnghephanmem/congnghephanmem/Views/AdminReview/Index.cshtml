@@ -1,0 +1,218 @@
+﻿@model congnghephanmem.ViewModels.ReviewManageViewModel
+
+@{
+    ViewBag.Title = "Quản lý Đánh Giá";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Quản lý Đánh Giá</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ecc8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#10221f",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .star-filled {
+            font-variation-settings: 'FILL' 1 !important;
+            color: #EAB308;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#0d1b19] dark:text-gray-100">
+    <div class="relative flex h-auto min-h-screen w-full group/design-root overflow-x-hidden">
+        <div class="flex flex-col w-full">
+
+            <main class="flex-1 p-4 sm:p-6 lg:p-8">
+                <div class="w-full max-w-7xl mx-auto">
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
+                            <div class="flex items-center justify-center size-12 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                                <span class="material-symbols-outlined text-3xl text-blue-500 dark:text-blue-300">reviews</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tổng đánh giá</p>
+                                <p class="text-2xl font-bold text-[#0d1b19] dark:text-gray-100">@Model.TotalReviews</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
+                            <div class="flex items-center justify-center size-12 bg-yellow-100 dark:bg-yellow-900/50 rounded-full">
+                                <span class="material-symbols-outlined text-3xl text-yellow-500 dark:text-yellow-300">star_half</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Đánh giá trung bình</p>
+                                <p class="text-2xl font-bold text-[#0d1b19] dark:text-gray-100">@Model.AverageRating / 5</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
+                            <div class="flex items-center justify-center size-12 bg-red-100 dark:bg-red-900/50 rounded-full">
+                                <span class="material-symbols-outlined text-3xl text-red-500 dark:text-red-300">chat_bubble</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Chưa trả lời</p>
+                                <p class="text-2xl font-bold text-[#0d1b19] dark:text-gray-100">@Model.UnrepliedCount</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-6">
+                        @foreach (var item in Model.Reviews)
+                        {
+                            var reply = new congnghephanmem.Models.db_cnpmEntities().comments.FirstOrDefault(c => c.parent_id == item.id);
+                            string replyText = reply != null ? reply.content : "";
+
+                            <div class="bg-white dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div class="flex flex-col sm:flex-row gap-4">
+
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12"
+                                             style="background-image: url('@(item.user.avatar ?? "https://cdn-icons-png.flaticon.com/512/1077/1077114.png")');">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-1">
+                                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2">
+                                            <p class="font-bold text-lg">@item.user.full_name</p>
+
+                                            <div class="flex items-center gap-1 text-yellow-500">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= item.rating)
+                                                    {
+                                                        <span class="material-symbols-outlined text-base star-filled">star</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="material-symbols-outlined text-base">star</span>
+                                                    }
+                                                }
+                                            </div>
+
+                                            @if (item.status == "approved")
+                                            {
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">Đã duyệt</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">Chờ duyệt</span>
+                                            }
+
+                                            <span class="text-xs text-gray-400 ml-auto">@item.created_at.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                        </div>
+
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                                            Sản phẩm: <a class="font-medium text-teal-600 dark:text-teal-400 hover:underline" href="/Product/Detail/@item.product_id" target="_blank">@item.product.name</a>
+                                        </p>
+                                        <p class="text-gray-700 dark:text-gray-300 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                            @item.content
+                                        </p>
+
+                                        @if (item.comment_medias.Any())
+                                        {
+                                            <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+                                                @foreach (var media in item.comment_medias)
+                                                {
+                                                    <img src="@media.media_url" class="h-16 w-16 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90" onclick="window.open(this.src)" />
+                                                }
+                                            </div>
+                                        }
+
+                                        <form action="@Url.Action("Reply", "AdminReview")" method="post" class="mt-4 border-t border-gray-100 pt-4">
+                                            <input type="hidden" name="id" value="@item.id" />
+                                            <div class="relative">
+                                                <textarea name="replyContent"
+                                                          class="block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm p-3"
+                                                          placeholder="Nhập phản hồi của shop..."
+                                                          rows="2">@replyText</textarea>
+                                            </div>
+
+                                            <div class="flex items-center gap-2 mt-3 justify-end">
+                                                @if (item.status == "approved")
+                                                {
+                                                    <button type="button" onclick="changeStatus(@item.id, 'rejected')"
+                                                            class="flex cursor-pointer items-center justify-center rounded-md h-9 text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 transition text-sm font-medium">
+                                                        <span class="material-symbols-outlined text-base mr-1">visibility_off</span> Ẩn
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" onclick="changeStatus(@item.id, 'approved')"
+                                                            class="flex cursor-pointer items-center justify-center rounded-md h-9 text-green-700 bg-green-50 hover:bg-green-100 px-3 transition text-sm font-medium">
+                                                        <span class="material-symbols-outlined text-base mr-1">check_circle</span> Duyệt
+                                                    </button>
+                                                }
+
+                                                <button type="button" onclick="deleteReview(@item.id)"
+                                                        class="flex cursor-pointer items-center justify-center rounded-md h-9 text-red-600 bg-red-50 hover:bg-red-100 px-3 transition text-sm font-medium">
+                                                    <span class="material-symbols-outlined text-base mr-1">delete</span> Xóa
+                                                </button>
+
+                                                <button type="submit"
+                                                        class="flex cursor-pointer items-center justify-center rounded-md h-9 bg-teal-500 hover:bg-teal-600 text-white px-4 transition text-sm font-bold shadow-sm shadow-teal-200">
+                                                    <span class="material-symbols-outlined text-base mr-1">reply</span>
+                                                    @(string.IsNullOrEmpty(replyText) ? "Gửi Trả lời" : "Cập nhật")
+                                                </button>
+                                            </div>
+                                        </form>
+
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <form id="statusForm" action="@Url.Action("UpdateStatus", "AdminReview")" method="post" style="display:none;">
+        <input type="hidden" name="id" id="statusId" />
+        <input type="hidden" name="status" id="statusValue" />
+    </form>
+
+    <form id="deleteForm" action="@Url.Action("Delete", "AdminReview")" method="post" style="display:none;">
+        <input type="hidden" name="id" id="deleteId" />
+    </form>
+
+    <script>
+        function changeStatus(id, status) {
+            document.getElementById('statusId').value = id;
+            document.getElementById('statusValue').value = status;
+            document.getElementById('statusForm').submit();
+        }
+
+        function deleteReview(id) {
+            if (confirm('Bạn có chắc muốn xóa đánh giá này không? Hành động này không thể hoàn tác.')) {
+                document.getElementById('deleteId').value = id;
+                document.getElementById('deleteForm').submit();
+            }
+        }
+    </script>
+</body>
+</html>

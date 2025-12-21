@@ -1,0 +1,220 @@
+﻿@model congnghephanmem.ViewModels.UserDetailViewModel
+
+@{
+    ViewBag.Title = "Hồ sơ khách hàng";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    var user = Model.UserInfo;
+    var avatarUrl = string.IsNullOrEmpty(user.avatar) ? "https://i.pravatar.cc/150?u=" + user.id : user.avatar;
+}
+
+<style>
+    .card-profile {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        height: 100%;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+
+    .avatar-lg {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #f8f9fa;
+        margin-bottom: 15px;
+    }
+
+    .card-stat {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        height: 100%;
+    }
+
+    .stat-icon-box {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .bg-green-light {
+        background-color: #DCFCE7;
+        color: #166534;
+    }
+
+    .bg-red-light {
+        background-color: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .bg-blue-light {
+        background-color: #E0F2FE;
+        color: #075985;
+    }
+</style>
+
+<div class="mb-4">
+    <a href="@Url.Action("Index")" class="text-decoration-none text-muted fw-bold small">
+        <i class="material-symbols-outlined align-middle fs-6">arrow_back</i> Quay lại danh sách
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card-profile">
+            <img src="@avatarUrl" class="avatar-lg shadow-sm" alt="Avatar">
+            <h5 class="fw-bold text-dark">@user.full_name</h5>
+            <p class="text-muted small">@user.email</p>
+
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                @if (user.is_active == true)
+                {
+                    <span class="status-badge bg-green-light">Đang hoạt động</span>
+                }
+                else
+                {
+                    <span class="status-badge bg-red-light">Đã bị khóa</span>
+                }
+                <span class="status-badge bg-blue-light">@Model.CustomerGroup</span>
+            </div>
+
+            <hr class="opacity-25 my-4">
+
+            <div class="text-start">
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted d-block">Số điện thoại</label>
+                    <span class="text-dark">@user.phone_number</span>
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted d-block">Ngày tham gia</label>
+                    <span class="text-dark">@user.created_at.Value.ToString("dd/MM/yyyy")</span>
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted d-block">Địa chỉ gần nhất</label>
+                    <span class="text-dark small">@(Model.OrderHistory.FirstOrDefault()?.shipping_address ?? "Chưa có đơn hàng")</span>
+                </div>
+            </div>
+
+            <div class="mt-4 d-grid gap-2">
+                @if (user.is_active == true)
+                {
+                    <a href="@Url.Action("ToggleStatus", new { id = user.id })" class="btn btn-outline-danger fw-bold" onclick="return confirm('Khóa tài khoản này?');">
+                        <i class="material-symbols-outlined align-middle fs-6">lock</i> Khóa tài khoản
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("ToggleStatus", new { id = user.id })" class="btn btn-success text-white fw-bold" onclick="return confirm('Mở khóa tài khoản?');">
+                        <i class="material-symbols-outlined align-middle fs-6">lock_open</i> Mở khóa
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card-stat">
+                    <div class="stat-icon-box bg-primary bg-opacity-10 text-primary">
+                        <span class="material-symbols-outlined">shopping_bag</span>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small fw-bold m-0">Tổng đơn hàng</h6>
+                        <h4 class="fw-bold m-0 text-dark">@Model.TotalOrders</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card-stat">
+                    <div class="stat-icon-box bg-warning bg-opacity-10 text-warning">
+                        <span class="material-symbols-outlined">payments</span>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small fw-bold m-0">Tổng chi tiêu</h6>
+                        <h4 class="fw-bold m-0 text-dark">@string.Format("{0:0,0}đ", Model.TotalSpent)</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-3 shadow-sm" style="min-height: 400px;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold m-0">Lịch sử đơn hàng</h6>
+                <span class="badge bg-light text-dark border">@Model.TotalOrders đơn</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light small text-uppercase">
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Ngày đặt</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Tổng tiền</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.OrderHistory.Any())
+                        {
+                            foreach (var item in Model.OrderHistory)
+                            {
+                                string statusClass = "";
+                                string statusText = "";
+                                switch (item.status)
+                                {
+                                    case "PENDING_CONFIRMATION": statusClass = "text-warning"; statusText = "Chờ xác nhận"; break;
+                                    case "SHIPPED": statusClass = "text-info"; statusText = "Đang giao"; break;
+                                    case "DELIVERED": statusClass = "text-success"; statusText = "Hoàn thành"; break;
+                                    case "CANCELLED": statusClass = "text-danger"; statusText = "Đã hủy"; break;
+                                    default: statusClass = "text-primary"; statusText = item.status; break;
+                                }
+
+                                <tr>
+                                    <td><a href="@Url.Action("Details", "Order", new { id = item.id })" class="fw-bold text-decoration-none">#ORD-@item.id</a></td>
+                                    <td class="text-muted small">@item.created_at.Value.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td><span class="fw-bold small @statusClass">@statusText</span></td>
+                                    <td class="text-end fw-bold">@string.Format("{0:0,0}đ", item.total_money)</td>
+                                    <td class="text-end">
+                                        <a href="@Url.Action("Details", "Order", new { id = item.id })" class="btn btn-sm btn-light text-muted">
+                                            <i class="material-symbols-outlined fs-6">visibility</i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">Khách hàng này chưa có đơn hàng nào.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
